@@ -831,7 +831,49 @@
     const userPrompt = `여행지: ${city}, 일정: ${trip.daysCount}일, 테마/동행: ${style}`;
 
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(settings.geminiApiKey)}`;
+try {
+      const models = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
+      let data = null;
+      let lastErr = '';
+
+      for (const model of models) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(settings.geminiApiKey)}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+            generationConfig: { temperature: 0.7 }
+          })
+        });
+
+        if (res.ok) {
+          data = await res.json();
+          break;
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          lastErr = errData.error?.message || `HTTP ${res.status}`;
+        }
+      }
+
+      if (!data) throw new Error(lastErr);
+
+      let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+      rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const places = JSON.parse(rawText);
+
+      if (!Array.isArray(places) || places.length === 0) {
+        throw new Error('추천 결과를 해석하지 못했습니다.');
+      }
+
+      renderRecommendations(places);
+      statusEl.textContent = `'${city}' 추천 장소 ${places.length}곳입니다. 원하는 날짜 버튼을 눌러 일정에 추가하세요.`;
+    } catch (err) {
+      statusEl.textContent = `추천 호출 오류: ${err.message}`;
+    } finally {
+      btn.disabled = false;
+      updateRecButtonLabel();
+    }
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
