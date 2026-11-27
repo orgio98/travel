@@ -66,3 +66,1777 @@
       border-radius: 8px;
       font-size: 0.78rem;
       font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-sm.primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .trip-selector-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    select, input, textarea {
+      font-family: inherit;
+      font-size: 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: #fff;
+      color: var(--text);
+    }
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    #tripSelect {
+      flex: 1;
+      font-weight: 600;
+    }
+
+    /* Main 4 Navigation Tabs */
+    .main-nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+    }
+    .nav-tab {
+      border: none;
+      background: transparent;
+      padding: 10px 2px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--muted);
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .nav-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 14px 14px 0;
+    }
+
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 15px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .section-title {
+      font-size: 0.98rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* AI Recommend Panel */
+    .ai-form {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .ai-form .full { grid-column: 1 / -1; }
+    .rec-list {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .rec-item {
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 11px;
+      background: #fafcff;
+    }
+    .rec-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .rec-name { font-weight: 700; font-size: 0.95rem; }
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+      white-space: nowrap;
+    }
+    .badge.food { background: #fef3c7; color: #b45309; }
+    .badge.dur { background: #f1f5f9; color: #475569; }
+    .badge.purple { background: #f3e8ff; color: #6d28d9; }
+    .badge.green { background: #d1fae5; color: #065f46; }
+    .rec-desc {
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin: 5px 0 9px;
+      line-height: 1.42;
+    }
+    .rec-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .day-add-btn {
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 9px;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    /* Day Tabs */
+    .day-tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 12px;
+      scrollbar-width: none;
+    }
+    .day-tabs::-webkit-scrollbar { display: none; }
+    .day-tab {
+      border: 1px solid var(--border);
+      background: #fff;
+      padding: 7px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      color: var(--muted);
+    }
+    .day-tab.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    /* Timeline & Route Connector */
+    .timeline-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .item-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fff;
+    }
+    .item-card.done {
+      opacity: 0.55;
+      background: #f8fafc;
+    }
+    .item-row1 {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .item-check {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--success);
+      cursor: pointer;
+    }
+    .item-time {
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+    .item-place {
+      font-weight: 700;
+      font-size: 0.98rem;
+      flex: 1;
+      min-width: 140px;
+    }
+    .item-card.done .item-place { text-decoration: line-through; }
+    .item-memo {
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin: 4px 0 10px 26px;
+      line-height: 1.42;
+      white-space: pre-wrap;
+    }
+    .item-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-left: 26px;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .map-links { display: flex; gap: 5px; flex-wrap: wrap; }
+    .map-btn {
+      font-size: 0.74rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .map-btn.apple {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+    .ctrl-btns { display: flex; gap: 4px; }
+    .ctrl-btn {
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 6px;
+      padding: 3px 7px;
+      font-size: 0.76rem;
+      cursor: pointer;
+      color: var(--muted);
+    }
+
+    /* Transit Connector between places */
+    .transit-connector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 6px 7px 18px;
+      position: relative;
+    }
+    .transit-connector::before {
+      content: "";
+      position: absolute;
+      left: 26px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #cbd5e1;
+    }
+    .transit-pill {
+      position: relative;
+      z-index: 1;
+      margin-left: 14px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 20px;
+      padding: 5px 10px;
+      font-size: 0.76rem;
+      color: var(--text);
+      width: 100%;
+      justify-content: space-between;
+    }
+    .transit-info-btn {
+      border: none;
+      background: transparent;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      padding: 0;
+      text-align: left;
+    }
+    .route-links {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .route-btn {
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .route-btn.apple {
+      background: #0f172a;
+      color: #ffffff;
+      border-color: #0f172a;
+    }
+
+    /* Form Grid */
+    .form-grid {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .form-grid .full { grid-column: 1 / -1; }
+    .divider-top {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border);
+    }
+
+    /* Ticket & Voucher Cards */
+    .ticket-card {
+      border: 1px solid #cbd5e1;
+      border-left: 5px solid var(--primary);
+      border-radius: 12px;
+      padding: 13px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    .ticket-card.train { border-left-color: #10b981; }
+    .ticket-card.bus { border-left-color: #f59e0b; }
+    .ticket-card.hotel { border-left-color: #7c3aed; }
+    .ticket-card.voucher { border-left-color: #ec4899; }
+
+    .ticket-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 6px;
+    }
+    .ticket-route {
+      font-size: 1.02rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .ticket-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      font-size: 0.83rem;
+      color: var(--text);
+      background: #f8fafc;
+      padding: 9px;
+      border-radius: 8px;
+    }
+    .ticket-meta span { color: var(--muted); font-size: 0.75rem; display: block; }
+    .copy-code-btn {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: 4px;
+      color: var(--primary);
+    }
+
+    /* Expense Summary & List */
+    .exp-summary-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      background: var(--primary-light);
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .exp-stat-label { font-size: 0.78rem; color: #1e40af; font-weight: 600; }
+    .exp-stat-val { font-size: 1.15rem; font-weight: 800; color: #1d4ed8; margin-top: 2px; }
+    .exp-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+    }
+    .exp-row:last-child { border-bottom: none; }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 440px;
+      padding: 18px;
+      max-height: 88vh;
+      overflow-y: auto;
+    }
+    .modal h3 { margin: 0 0 12px; font-size: 1.05rem; }
+    .field { margin-bottom: 10px; }
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .field input, .field select, .field textarea { width: 100%; }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .hint {
+      font-size: 0.76rem;
+      color: var(--muted);
+      line-height: 1.4;
+      margin-top: 4px;
+    }
+    .status-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      color: #fff;
+      padding: 9px 16px;
+      border-radius: 20px;
+      font-size: 0.84rem;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 100;
+      white-space: nowrap;
+    }
+    .status-toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="app-title">🧭 여행 플래너</div>
+    <div class="icon-btns">
+      <button class="btn-sm" onclick="copyShareText()">📋 공유</button>
+      <button class="btn-sm" onclick="openSyncModal()">☁️ 동기화</button>
+      <button class="btn-sm" onclick="openSettingsModal()">⚙️ 설정</button>
+    </div>
+  </div>
+  <div class="trip-selector-row">
+    <select id="tripSelect" onchange="switchTrip(this.value)"></select>
+    <button class="btn-sm primary" onclick="openNewTripModal()">+ 새 여행</button>
+  </div>
+  <nav class="main-nav">
+    <button class="nav-tab active" data-tab="itinerary" onclick="switchMainTab('itinerary')">📅 일정·경로</button>
+    <button class="nav-tab" data-tab="bookings" onclick="switchMainTab('bookings')">🏨 숙소·바우처</button>
+    <button class="nav-tab" data-tab="tickets" onclick="switchMainTab('tickets')">🎫 교통·티켓</button>
+    <button class="nav-tab" data-tab="expenses" onclick="switchMainTab('expenses')">💰 경비</button>
+  </nav>
+</header>
+
+<div class="container">
+
+  <!-- ==================== 1. 일정·맛집·이동경로 탭 ==================== -->
+  <section id="tab-itinerary" class="view-section active">
+    <!-- AI 명소 & 맛집 추천 카드 -->
+    <div class="card">
+      <div class="section-header" onclick="toggleRecommendPanel()">
+        <div class="section-title">✨ 여행지 명소 & 맛집 AI 추천</div>
+        <span id="recToggleText" style="font-size:0.82rem; color:var(--primary); font-weight:600;">접기 ▲</span>
+      </div>
+      <div id="recommendBody">
+        <div class="ai-form">
+          <input type="text" id="recCity" placeholder="여행지 (예: 상하이, 삿포로)" />
+          <select id="recFocus">
+            <option value="명소와 로컬 맛집 균형">🎯 명소 + 맛집 균형 추천</option>
+            <option value="현지인 추천 필수 맛집과 카페">🍽️ 현지 맛집·디저트 집중</option>
+            <option value="핵심 관광 명소와 야경 스팟">🏛️ 핵심 관광지·야경 집중</option>
+          </select>
+          <input type="text" id="recStyle" class="full" placeholder="세부 조건 (예: 성인 4인, 이동 편한 곳, 샤오롱바오·훠궈 추천)" />
+          <button class="btn-sm primary full" id="recActionBtn" style="padding:10px;" onclick="handleRecommend()">
+            추천 장소 불러오기
+          </button>
+        </div>
+        <div id="recStatus" class="hint" style="margin-top:8px;"></div>
+        <div id="recResults" class="rec-list"></div>
+      </div>
+    </div>
+
+    <!-- 일자별 타임라인 & 이동 경로 카드 -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="section-title" id="currentTripMeta">일정 타임라인</div>
+        <button class="btn-sm" style="color:var(--danger);" onclick="deleteCurrentTrip()">여행 삭제</button>
+      </div>
+
+      <div class="day-tabs" id="dayTabs"></div>
+      <div class="timeline-list" id="timelineList"></div>
+
+      <!-- 수동 일정 추가 폼 -->
+      <div class="form-grid divider-top">
+        <input type="time" id="addTime" value="10:00" />
+        <input type="text" id="addPlace" placeholder="장소명 또는 식당명 입력" />
+        <select id="addCategory">
+          <option value="관광">🏛️ 관광/명소</option>
+          <option value="맛집">🍽️ 맛집/식당</option>
+          <option value="카페">☕ 카페/디저트</option>
+          <option value="쇼핑">🛍️ 쇼핑</option>
+          <option value="숙소/이동">🏨 숙소/이동</option>
+        </select>
+        <input type="text" id="addDuration" placeholder="체류 소요시간 (예: 1시간 30분)" />
+        <input type="text" id="addMemo" class="full" placeholder="메모 (추천 메뉴, 예약번호, 입장 팁 등)" />
+        <button class="btn-sm primary full" style="padding:10px;" onclick="addManualItem()">+ 현재 날짜에 일정 추가</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 2. 숙소 · 바우처 · 예약 보관함 탭 ==================== -->
+  <section id="tab-bookings" class="view-section">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:12px;">🏨 숙소 · 투어 · 입장권 바우처 보관함</div>
+      <div id="bookingList"></div>
+
+      <div class="form-grid divider-top">
+        <select id="bkType">
+          <option value="숙소">🏨 숙소 (호텔/리조트)</option>
+          <option value="입장권/티켓">🎟️ 입장권 / 패스 바우처</option>
+          <option value="투어/액티비티">🚌 투어 / 유람선 / 공연</option>
+          <option value="통신/픽업">📶 유심·와이파이·픽업</option>
+          <option value="식당예약">🍽️ 식당 예약</option>
+        </select>
+        <input type="text" id="bkDate" placeholder="이용일/체크인 (예: 12/16~12/18)" />
+        <input type="text" id="bkTitle" class="full" placeholder="숙소명 또는 바우처 상품명 (예: 상하이 와이탄 호텔)" />
+        <input type="text" id="bkCode" placeholder="예약번호 / 바우처 코드" />
+        <input type="text" id="bkSubInfo" placeholder="체크아웃 또는 이용시간/인원" />
+        <input type="text" id="bkLocation" class="full" placeholder="주소 또는 집결지 (지도 검색용)" />
+        <input type="url" id="bkUrl" class="full" placeholder="바우처 링크 URL (선택, https://...)" />
+        <input type="text" id="bkMemo" class="full" placeholder="메모 (조식 포함 여부, PIN 번호, 취소 규정 등)" />
+        <button class="btn-sm primary full" style="padding:10px;" onclick="addBooking()">+ 숙소 · 바우처 저장하기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 3. 교통·티켓 보관함 탭 ==================== -->
+  <section id="tab-tickets" class="view-section">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:12px;">🎫 저장된 이동 티켓 (비행기 · 기차 · 버스)</div>
+      <div id="ticketList"></div>
+
+      <div class="form-grid divider-top">
+        <select id="tkType">
+          <option value="비행기">✈️ 비행기 (항공권)</option>
+          <option value="기차">🚄 기차 (KTX/SRT/열차)</option>
+          <option value="버스">🚌 버스 (고속/리무진)</option>
+        </select>
+        <input type="text" id="tkNumber" placeholder="편명/열차번호 (예: OZ361, KTX 105)" />
+        <input type="text" id="tkFrom" placeholder="출발지 (예: 인천 ICN)" />
+        <input type="text" id="tkTo" placeholder="도착지 (예: 상하이 푸동 PVG)" />
+        <input type="text" id="tkDepTime" placeholder="출발 일시 (예: 12/16 09:10)" />
+        <input type="text" id="tkArrTime" placeholder="도착 일시 (예: 12/16 10:25)" />
+        <input type="text" id="tkResCode" placeholder="예약번호 (PNR / 발권번호)" />
+        <input type="text" id="tkSeat" placeholder="좌석/터미널 (예: T1 / 14A~D)" />
+        <input type="text" id="tkMemo" class="full" placeholder="추가 메모 (수하물 규정, 탑승수속 마감 등)" />
+        <button class="btn-sm primary full" style="padding:10px;" onclick="addTicket()">+ 티켓 저장하기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 4. 여행 경비 & 정산 탭 ==================== -->
+  <section id="tab-expenses" class="view-section">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px; flex-wrap:wrap;">
+        <div class="section-title">💰 여행 경비 & 1/N 정산</div>
+        <div style="display:flex; align-items:center; gap:6px; font-size:0.82rem;">
+          <span>정산 인원:</span>
+          <input type="number" id="splitCountInput" min="1" max="30" value="4" style="width:60px; padding:5px 8px;" onchange="updateExpenseSettings()" />
+          <span>명</span>
+        </div>
+      </div>
+
+      <!-- 환율 설정 미니 바 -->
+      <div style="display:flex; align-items:center; gap:6px; margin-bottom:12px; font-size:0.82rem; background:#f8fafc; padding:8px 10px; border-radius:9px;">
+        <span>외화 환율 설정: 1</span>
+        <select id="fxCurrency" style="padding:4px 6px; font-size:0.82rem;" onchange="updateExpenseSettings()">
+          <option value="CNY">CNY (위안)</option>
+          <option value="JPY">JPY (엔)</option>
+          <option value="USD">USD (달러)</option>
+          <option value="EUR">EUR (유로)</option>
+        </select>
+        <span>=</span>
+        <input type="number" id="fxRate" value="195" step="0.1" style="width:82px; padding:4px 7px; font-size:0.82rem;" onchange="updateExpenseSettings()" />
+        <span>원</span>
+      </div>
+
+      <div class="exp-summary-box">
+        <div>
+          <div class="exp-stat-label">총 지출 합계 (원화 환산)</div>
+          <div class="exp-stat-val" id="expTotalKrw">0원</div>
+          <div class="hint" id="expSubTotals" style="margin-top:2px;"></div>
+        </div>
+        <div>
+          <div class="exp-stat-label" id="expPerPersonLabel">1인당 부담액 (4명 기준)</div>
+          <div class="exp-stat-val" id="expPerPersonKrw">0원</div>
+        </div>
+      </div>
+
+      <div id="expenseList"></div>
+
+      <div class="form-grid divider-top">
+        <select id="expDay"></select>
+        <select id="expCat">
+          <option value="식비">🍽️ 식비/카페</option>
+          <option value="교통">🚕 교통/항공</option>
+          <option value="숙박">🏨 숙박</option>
+          <option value="관광">🎟️ 입장권/투어</option>
+          <option value="쇼핑">🛍️ 쇼핑/기타</option>
+        </select>
+        <input type="text" id="expTitle" class="full" placeholder="지출 내역 (예: 점심 샤오롱바오 4인, 택시비)" />
+        <select id="expCurrency">
+          <option value="KRW">🇰🇷 KRW (원)</option>
+          <option value="CNY">🇨🇳 CNY (위안)</option>
+          <option value="JPY">🇯🇵 JPY (엔)</option>
+          <option value="USD">🇺🇸 USD (달러)</option>
+        </select>
+        <input type="number" id="expAmount" placeholder="금액 입력" step="any" />
+        <input type="text" id="expPayer" class="full" placeholder="결제자 / 메모 (예: 공동경비 카드, 홍길동 선결제)" />
+        <button class="btn-sm primary full" style="padding:10px;" onclick="addExpense()">+ 경비 내역 추가</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- 일정 및 다음 이동 구간 수정 모달 -->
+<div class="modal-backdrop" id="editItemModal">
+  <div class="modal">
+    <h3>일정 및 다음 이동 정보 수정</h3>
+    <input type="hidden" id="editItemId" />
+    <div class="field">
+      <label>방문 시각</label>
+      <input type="time" id="editTime" />
+    </div>
+    <div class="field">
+      <label>장소명 / 식당명</label>
+      <input type="text" id="editPlace" />
+    </div>
+    <div class="field">
+      <label>카테고리</label>
+      <select id="editCategory">
+        <option value="관광">🏛️ 관광/명소</option>
+        <option value="맛집">🍽️ 맛집/식당</option>
+        <option value="카페">☕ 카페/디저트</option>
+        <option value="쇼핑">🛍️ 쇼핑</option>
+        <option value="숙소/이동">🏨 숙소/이동</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>장소 체류 예상 소요시간</label>
+      <input type="text" id="editDuration" placeholder="예: 1시간 30분" />
+    </div>
+    <div class="field">
+      <label>다음 장소까지 이동 수단 & 소요시간</label>
+      <input type="text" id="editNextTransit" placeholder="예: 지하철 2호선 20분 / 택시 15분 / 도보 10분" />
+    </div>
+    <div class="field">
+      <label>메모 (추천 메뉴, 팁 등)</label>
+      <textarea id="editMemo" rows="3"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal('editItemModal')">취소</button>
+      <button class="btn-sm primary" onclick="saveEditedItem()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 이동 구간 빠른 편집 모달 -->
+<div class="modal-backdrop" id="transitModal">
+  <div class="modal">
+    <h3>🚶 다음 방문지까지 이동 시간 기록</h3>
+    <input type="hidden" id="transitItemId" />
+    <div id="transitRouteLabel" style="font-size:0.88rem; font-weight:700; color:var(--primary); margin-bottom:10px;"></div>
+    <div class="field">
+      <label>이동 수단 및 예상 이동 시간</label>
+      <input type="text" id="transitInput" placeholder="예: 지하철 25분, 택시 15분, 도보 12분" />
+      <div class="hint">애플 경로 버튼을 눌러 Apple Maps에서 소요시간을 확인한 뒤 적어두시면 편리합니다.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal('transitModal')">취소</button>
+      <button class="btn-sm primary" onclick="saveTransitInfo()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 새 여행 생성 모달 -->
+<div class="modal-backdrop" id="newTripModal">
+  <div class="modal">
+    <h3>새 여행 만들기</h3>
+    <div class="field">
+      <label>여행 제목</label>
+      <input type="text" id="newTitle" placeholder="예: 2026.12 상하이 2박3일" />
+    </div>
+    <div class="field">
+      <label>주요 여행지 (추천 및 지도·경로 검색용)</label>
+      <input type="text" id="newDest" placeholder="예: 상하이" />
+    </div>
+    <div class="field">
+      <label>여행 일수</label>
+      <select id="newDays">
+        <option value="1">당일치기 (1일)</option>
+        <option value="2">1박 2일 (2일)</option>
+        <option value="3" selected>2박 3일 (3일)</option>
+        <option value="4">3박 4일 (4일)</option>
+        <option value="5">4박 5일 (5일)</option>
+        <option value="6">5박 6일 (6일)</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal('newTripModal')">취소</button>
+      <button class="btn-sm primary" onclick="createNewTrip()">생성하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 설정 모달 -->
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal">
+    <h3>⚙️ AI 추천 설정</h3>
+    <div class="field">
+      <label>Google Gemini API Key (무료 티어 지원)</label>
+      <input type="password" id="geminiKeyInput" placeholder="AIzaSy..." />
+      <div class="hint">
+        • Google AI Studio 무료 키를 입력하면 여행지 명소 및 맛집 추천이 자동 실행됩니다.<br/>
+        • 현재 기기(localStorage)에만 저장됩니다.
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal('settingsModal')">닫기</button>
+      <button class="btn-sm primary" onclick="saveSettings()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- GitHub Gist 동기화 모달 -->
+<div class="modal-backdrop" id="syncModal">
+  <div class="modal">
+    <h3>☁️ GitHub Gist 기기 간 동기화</h3>
+    <div class="field">
+      <label>GitHub Personal Access Token (gist 권한)</label>
+      <input type="password" id="gistTokenInput" placeholder="ghp_..." />
+    </div>
+    <div class="field">
+      <label>Gist ID (비워두고 저장 시 새 Gist 자동 생성)</label>
+      <input type="text" id="gistIdInput" placeholder="예: a1b2c3d4e5f6..." />
+      <div class="hint">일정, 이동시간, 숙소·바우처, 티켓, 경비가 모두 동기화됩니다.</div>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <button class="btn-sm primary" style="flex:1; padding:9px;" onclick="syncToGist('upload')">⬆️ Gist에 저장</button>
+      <button class="btn-sm" style="flex:1; padding:9px;" onclick="syncToGist('download')">⬇️ Gist에서 불러오기</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal('syncModal')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div class="status-toast" id="toast"></div>
+
+<script>
+  const STORAGE_KEY = 'trip_planner_v1';
+  const SETTINGS_KEY = 'trip_planner_settings_v1';
+
+  let state = {
+    currentTripId: null,
+    selectedDay: 1,
+    activeMainTab: 'itinerary',
+    trips: []
+  };
+
+  let settings = {
+    geminiApiKey: '',
+    gistToken: '',
+    gistId: ''
+  };
+
+  let recOpen = true;
+
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2400);
+  }
+
+  function loadAll() {
+    try {
+      const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+      if (savedSettings) settings = { ...settings, ...savedSettings };
+    } catch (e) {}
+
+    try {
+      const savedState = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (savedState && Array.isArray(savedState.trips) && savedState.trips.length > 0) {
+        state = savedState;
+      } else {
+        initSampleTrip();
+      }
+    } catch (e) {
+      initSampleTrip();
+    }
+    updateRecButtonLabel();
+    render();
+  }
+
+  function initSampleTrip() {
+    const id = 'trip_' + Date.now();
+    state = {
+      currentTripId: id,
+      selectedDay: 1,
+      activeMainTab: 'itinerary',
+      trips: [
+        {
+          id,
+          title: '2026.12 상하이 2박 3일',
+          destination: '상하이',
+          daysCount: 3,
+          splitCount: 4,
+          fxCurrency: 'CNY',
+          fxRate: 195,
+          items: [
+            { id: 'i1', day: 1, time: '14:30', place: '예원 (豫園) & 남상만두점', category: '관광', duration: '2시간', nextTransit: '택시 12분 / 도보 25분', memo: '정원 관람 후 성게알 샤오롱바오 시식', done: false },
+            { id: 'i2', day: 1, time: '18:30', place: '와이탄 (外灘) 야경 산책', category: '관광', duration: '1시간 30분', nextTransit: '', memo: '동방명주 야경 감상 및 강변 산책', done: false },
+            { id: 'i3', day: 2, time: '12:00', place: '하이디라오 (인민광장점)', category: '맛집', duration: '1시간 30분', nextTransit: '', memo: '토마토탕 + 마라탕 훠궈 추천', done: false }
+          ],
+          bookings: [
+            { id: 'bk1', type: '숙소', date: '12/16 ~ 12/18 (2박)', title: '상하이 와이탄 중심부 호텔 (2객실)', code: 'RES-8849201', subInfo: '체크인 15:00 / 체크아웃 12:00', location: '상하이 황푸구 난징동루 인근', url: '', memo: '조식 4인 포함, 여권 지참 체크인' }
+          ],
+          tickets: [
+            { id: 'tk1', type: '비행기', number: 'OZ361', from: '인천 (ICN)', to: '상하이 푸동 (PVG)', depTime: '12/16 09:10', arrTime: '12/16 10:25', resCode: 'ABC123', seat: '제1터미널', memo: '출발 2시간 전 공항 도착' }
+          ],
+          expenses: [
+            { id: 'ex1', day: 1, category: '식비', title: '남상만두점 점심 (4인)', currency: 'CNY', amount: 240, payer: '공동경비' }
+          ]
+        }
+      ]
+    };
+    saveState();
+  }
+
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function getCurrentTrip() {
+    const trip = state.trips.find(t => t.id === state.currentTripId) || state.trips[0];
+    if (trip) {
+      if (!Array.isArray(trip.items)) trip.items = [];
+      if (!Array.isArray(trip.bookings)) trip.bookings = [];
+      if (!Array.isArray(trip.tickets)) trip.tickets = [];
+      if (!Array.isArray(trip.expenses)) trip.expenses = [];
+      if (!trip.splitCount) trip.splitCount = 4;
+      if (!trip.fxCurrency) trip.fxCurrency = 'CNY';
+      if (!trip.fxRate) trip.fxRate = 195;
+    }
+    return trip;
+  }
+
+  function switchMainTab(tabName) {
+    state.activeMainTab = tabName;
+    document.querySelectorAll('.nav-tab').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+    document.querySelectorAll('.view-section').forEach(sec => {
+      sec.classList.toggle('active', sec.id === `tab-${tabName}`);
+    });
+    render();
+  }
+
+  function render() {
+    const trip = getCurrentTrip();
+    if (!trip) return;
+    state.currentTripId = trip.id;
+
+    const sel = document.getElementById('tripSelect');
+    sel.innerHTML = state.trips.map(t =>
+      `<option value="${t.id}" ${t.id === trip.id ? 'selected' : ''}>${escapeHtml(t.title)}</option>`
+    ).join('');
+
+    document.getElementById('currentTripMeta').textContent = `${trip.destination} · 총 ${trip.daysCount}일 일정`;
+    if (!document.getElementById('recCity').value) {
+      document.getElementById('recCity').value = trip.destination;
+    }
+
+    renderItinerary(trip);
+    renderBookings(trip);
+    renderTickets(trip);
+    renderExpenses(trip);
+  }
+
+  /* ==================== 1. 일정·맛집·이동경로 렌더링 ==================== */
+  function renderItinerary(trip) {
+    if (state.selectedDay > trip.daysCount) state.selectedDay = 1;
+    const tabsEl = document.getElementById('dayTabs');
+    let tabsHtml = '';
+    for (let d = 1; d <= trip.daysCount; d++) {
+      const count = trip.items.filter(x => x.day === d).length;
+      tabsHtml += `<button class="day-tab ${d === state.selectedDay ? 'active' : ''}" onclick="selectDay(${d})">Day ${d} (${count})</button>`;
+    }
+    tabsEl.innerHTML = tabsHtml;
+
+    const listEl = document.getElementById('timelineList');
+    const dayItems = trip.items.filter(x => x.day === state.selectedDay);
+
+    if (dayItems.length === 0) {
+      listEl.innerHTML = `<div style="text-align:center; padding:26px 10px; color:var(--muted); font-size:0.88rem;">
+        Day ${state.selectedDay}에 등록된 일정이 없습니다.<br/>위에서 명소·맛집을 추천받거나 아래에서 추가해 보세요.
+      </div>`;
+      return;
+    }
+
+    listEl.innerHTML = dayItems.map((item, idx) => {
+      const q = encodeURIComponent(`${trip.destination} ${item.place}`);
+      const appleMap = `https://maps.apple.com/?q=${q}`;
+      const gMap = `https://www.google.com/maps/search/?api=1&query=${q}`;
+      const amapUrl = `https://ditu.amap.com/search?query=${q}`;
+      const isFood = item.category === '맛집' || item.category === '카페';
+
+      // 다음 장소가 있을 경우 이동 구간 & 애플 경로 / 구글 경로 링크 생성
+      let transitHtml = '';
+      if (idx < dayItems.length - 1) {
+        const nextItem = dayItems[idx + 1];
+        const originQ = encodeURIComponent(`${trip.destination} ${item.place}`);
+        const destQ = encodeURIComponent(`${trip.destination} ${nextItem.place}`);
+        const appleDirUrl = `https://maps.apple.com/?saddr=${originQ}&daddr=${destQ}&dirflg=r`;
+        const gDirUrl = `https://www.google.com/maps/dir/?api=1&origin=${originQ}&destination=${destQ}&travelmode=transit`;
+        const transitLabel = item.nextTransit ? `🚶 ${escapeHtml(item.nextTransit)}` : `+ 이동시간 기록`;
+
+        transitHtml = `
+          <div class="transit-connector">
+            <div class="transit-pill">
+              <button class="transit-info-btn" onclick="openTransitModal('${item.id}', '${escapeAttr(item.place)}', '${escapeAttr(nextItem.place)}')">
+                ${transitLabel}
+              </button>
+              <div class="route-links">
+                <a class="route-btn apple" href="${appleDirUrl}" target="_blank" rel="noopener">🍎 애플 경로</a>
+                <a class="route-btn" href="${gDirUrl}" target="_blank" rel="noopener">🗺️ 구글 경로</a>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="item-card ${item.done ? 'done' : ''}">
+          <div class="item-row1">
+            <input type="checkbox" class="item-check" ${item.done ? 'checked' : ''} onchange="toggleDone('${item.id}')" />
+            <span class="item-time">${escapeHtml(item.time || '--:--')}</span>
+            <span class="badge ${isFood ? 'food' : ''}">${escapeHtml(item.category)}</span>
+            ${item.duration ? `<span class="badge dur">⏱ ${escapeHtml(item.duration)}</span>` : ''}
+            <span class="item-place">${escapeHtml(item.place)}</span>
+          </div>
+          ${item.memo ? `<div class="item-memo">${escapeHtml(item.memo)}</div>` : ''}
+          <div class="item-footer">
+            <div class="map-links">
+              <a class="map-btn apple" href="${appleMap}" target="_blank" rel="noopener">🍎 애플지도</a>
+              <a class="map-btn" href="${amapUrl}" target="_blank" rel="noopener">🧭 고덕지도</a>
+              <a class="map-btn" href="${gMap}" target="_blank" rel="noopener">구글맵</a>
+            </div>
+            <div class="ctrl-btns">
+              <button class="ctrl-btn" onclick="openEditItemModal('${item.id}')">수정</button>
+              <button class="ctrl-btn" onclick="moveItem('${item.id}', -1)" ${idx === 0 ? 'disabled' : ''}>▲</button>
+              <button class="ctrl-btn" onclick="moveItem('${item.id}', 1)" ${idx === dayItems.length - 1 ? 'disabled' : ''}>▼</button>
+              <button class="ctrl-btn" style="color:var(--danger);" onclick="deleteItem('${item.id}')">삭제</button>
+            </div>
+          </div>
+        </div>
+        ${transitHtml}
+      `;
+    }).join('');
+  }
+
+  function addManualItem() {
+    const trip = getCurrentTrip();
+    const time = document.getElementById('addTime').value || '10:00';
+    const place = document.getElementById('addPlace').value.trim();
+    const category = document.getElementById('addCategory').value;
+    const duration = document.getElementById('addDuration').value.trim();
+    const memo = document.getElementById('addMemo').value.trim();
+
+    if (!place) {
+      showToast('장소명 또는 식당명을 입력해 주세요.');
+      return;
+    }
+
+    trip.items.push({
+      id: 'item_' + Date.now() + Math.random().toString(36).slice(2, 6),
+      day: state.selectedDay,
+      time,
+      place,
+      category,
+      duration,
+      nextTransit: '',
+      memo,
+      done: false
+    });
+
+    document.getElementById('addPlace').value = '';
+    document.getElementById('addDuration').value = '';
+    document.getElementById('addMemo').value = '';
+    saveState();
+    render();
+    showToast(`Day ${state.selectedDay}에 추가되었습니다.`);
+  }
+
+  function openEditItemModal(itemId) {
+    const trip = getCurrentTrip();
+    const item = trip.items.find(x => x.id === itemId);
+    if (!item) return;
+    document.getElementById('editItemId').value = item.id;
+    document.getElementById('editTime').value = item.time || '10:00';
+    document.getElementById('editPlace').value = item.place || '';
+    document.getElementById('editCategory').value = item.category || '관광';
+    document.getElementById('editDuration').value = item.duration || '';
+    document.getElementById('editNextTransit').value = item.nextTransit || '';
+    document.getElementById('editMemo').value = item.memo || '';
+    document.getElementById('editItemModal').classList.add('open');
+  }
+
+  function saveEditedItem() {
+    const trip = getCurrentTrip();
+    const id = document.getElementById('editItemId').value;
+    const item = trip.items.find(x => x.id === id);
+    if (!item) return;
+    const place = document.getElementById('editPlace').value.trim();
+    if (!place) {
+      showToast('장소명을 입력해 주세요.');
+      return;
+    }
+    item.time = document.getElementById('editTime').value;
+    item.place = place;
+    item.category = document.getElementById('editCategory').value;
+    item.duration = document.getElementById('editDuration').value.trim();
+    item.nextTransit = document.getElementById('editNextTransit').value.trim();
+    item.memo = document.getElementById('editMemo').value.trim();
+    saveState();
+    closeModal('editItemModal');
+    render();
+    showToast('일정이 수정되었습니다.');
+  }
+
+  function openTransitModal(itemId, fromName, toName) {
+    const trip = getCurrentTrip();
+    const item = trip.items.find(x => x.id === itemId);
+    if (!item) return;
+    document.getElementById('transitItemId').value = item.id;
+    document.getElementById('transitRouteLabel').textContent = `${fromName} → ${toName}`;
+    document.getElementById('transitInput').value = item.nextTransit || '';
+    document.getElementById('transitModal').classList.add('open');
+  }
+
+  function saveTransitInfo() {
+    const trip = getCurrentTrip();
+    const id = document.getElementById('transitItemId').value;
+    const item = trip.items.find(x => x.id === id);
+    if (!item) return;
+    item.nextTransit = document.getElementById('transitInput').value.trim();
+    saveState();
+    closeModal('transitModal');
+    render();
+    showToast('이동 시간이 저장되었습니다.');
+  }
+
+  function toggleDone(itemId) {
+    const trip = getCurrentTrip();
+    const item = trip.items.find(x => x.id === itemId);
+    if (item) {
+      item.done = !item.done;
+      saveState();
+      render();
+    }
+  }
+
+  function deleteItem(itemId) {
+    const trip = getCurrentTrip();
+    trip.items = trip.items.filter(x => x.id !== itemId);
+    saveState();
+    render();
+  }
+
+  function moveItem(itemId, dir) {
+    const trip = getCurrentTrip();
+    const dayItems = trip.items.filter(x => x.day === state.selectedDay);
+    const otherItems = trip.items.filter(x => x.day !== state.selectedDay);
+    const idx = dayItems.findIndex(x => x.id === itemId);
+    const targetIdx = idx + dir;
+    if (idx < 0 || targetIdx < 0 || targetIdx >= dayItems.length) return;
+
+    [dayItems[idx], dayItems[targetIdx]] = [dayItems[targetIdx], dayItems[idx]];
+    trip.items = [...otherItems, ...dayItems];
+    saveState();
+    render();
+  }
+
+  /* ==================== 2. 숙소 · 바우처 렌더링 ==================== */
+  function renderBookings(trip) {
+    const el = document.getElementById('bookingList');
+    if (trip.bookings.length === 0) {
+      el.innerHTML = `<div style="text-align:center; padding:20px; color:var(--muted); font-size:0.86rem;">
+        저장된 숙소 예약이나 입장권·투어 바우처가 없습니다.<br/>아래에서 예약 정보를 등록해 현장에서 바로 꺼내 보세요.
+      </div>`;
+      return;
+    }
+
+    el.innerHTML = trip.bookings.map(bk => {
+      const isHotel = bk.type === '숙소';
+      const icon = isHotel ? '🏨' : (bk.type === '식당예약' ? '🍽️' : '🎟️');
+      const cardCls = isHotel ? 'hotel' : 'voucher';
+      const badgeCls = isHotel ? 'purple' : 'green';
+      const mapQuery = encodeURIComponent(bk.location || `${trip.destination} ${bk.title}`);
+      const appleMap = `https://maps.apple.com/?q=${mapQuery}`;
+      const gMap = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+
+      return `
+        <div class="ticket-card ${cardCls}">
+          <div class="ticket-top">
+            <span class="badge ${badgeCls}">${icon} ${escapeHtml(bk.type)} ${bk.date ? '· ' + escapeHtml(bk.date) : ''}</span>
+            <button class="ctrl-btn" style="color:var(--danger);" onclick="deleteBooking('${bk.id}')">삭제</button>
+          </div>
+          <div class="ticket-route">${escapeHtml(bk.title)}</div>
+          <div class="ticket-meta">
+            <div>
+              <span>예약번호 / 바우처 코드</span>
+              <strong>${escapeHtml(bk.code || '-')}</strong>
+              ${bk.code ? `<button class="copy-code-btn" onclick="copyText('${escapeAttr(bk.code)}')">복사</button>` : ''}
+            </div>
+            <div><span>이용 시간 / 체크아웃</span>${escapeHtml(bk.subInfo || '-')}</div>
+          </div>
+          ${bk.location ? `<div class="hint" style="margin-top:6px;">📍 ${escapeHtml(bk.location)}</div>` : ''}
+          ${bk.memo ? `<div class="hint" style="margin-top:4px; color:var(--text);">📝 ${escapeHtml(bk.memo)}</div>` : ''}
+          <div style="display:flex; gap:6px; margin-top:9px; flex-wrap:wrap;">
+            <a class="map-btn apple" href="${appleMap}" target="_blank" rel="noopener">🍎 애플지도</a>
+            <a class="map-btn" href="${gMap}" target="_blank" rel="noopener">구글맵</a>
+            ${bk.url ? `<a class="map-btn" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;" href="${escapeHtml(bk.url)}" target="_blank" rel="noopener">🔗 바우처 링크 열기</a>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function addBooking() {
+    const trip = getCurrentTrip();
+    const type = document.getElementById('bkType').value;
+    const date = document.getElementById('bkDate').value.trim();
+    const title = document.getElementById('bkTitle').value.trim();
+    const code = document.getElementById('bkCode').value.trim();
+    const subInfo = document.getElementById('bkSubInfo').value.trim();
+    const location = document.getElementById('bkLocation').value.trim();
+    const url = document.getElementById('bkUrl').value.trim();
+    const memo = document.getElementById('bkMemo').value.trim();
+
+    if (!title) {
+      showToast('숙소명 또는 바우처 상품명을 입력해 주세요.');
+      return;
+    }
+
+    trip.bookings.push({
+      id: 'bk_' + Date.now(),
+      type, date, title, code, subInfo, location, url, memo
+    });
+
+    ['bkDate','bkTitle','bkCode','bkSubInfo','bkLocation','bkUrl','bkMemo'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    saveState();
+    render();
+    showToast('숙소 · 바우처 정보가 저장되었습니다.');
+  }
+
+  function deleteBooking(id) {
+    const trip = getCurrentTrip();
+    trip.bookings = trip.bookings.filter(b => b.id !== id);
+    saveState();
+    render();
+  }
+
+  async function copyText(str) {
+    await navigator.clipboard.writeText(str);
+    showToast(`복사됨: ${str}`);
+  }
+
+  /* ==================== 3. 교통·티켓 렌더링 ==================== */
+  function renderTickets(trip) {
+    const el = document.getElementById('ticketList');
+    if (trip.tickets.length === 0) {
+      el.innerHTML = `<div style="text-align:center; padding:20px; color:var(--muted); font-size:0.86rem;">
+        저장된 항공권, 기차표, 버스 티켓이 없습니다.<br/>아래에서 탑승 정보를 입력해 보관해 보세요.
+      </div>`;
+      return;
+    }
+
+    el.innerHTML = trip.tickets.map(tk => {
+      const icon = tk.type === '비행기' ? '✈️' : (tk.type === '기차' ? '🚄' : '🚌');
+      const cls = tk.type === '기차' ? 'train' : (tk.type === '버스' ? 'bus' : '');
+      return `
+        <div class="ticket-card ${cls}">
+          <div class="ticket-top">
+            <span class="badge">${icon} ${escapeHtml(tk.type)} ${tk.number ? '· ' + escapeHtml(tk.number) : ''}</span>
+            <button class="ctrl-btn" style="color:var(--danger);" onclick="deleteTicket('${tk.id}')">삭제</button>
+          </div>
+          <div class="ticket-route">${escapeHtml(tk.from)} → ${escapeHtml(tk.to)}</div>
+          <div class="ticket-meta">
+            <div><span>출발 일시</span>${escapeHtml(tk.depTime || '-')}</div>
+            <div><span>도착 일시</span>${escapeHtml(tk.arrTime || '-')}</div>
+            <div>
+              <span>예약번호 (PNR)</span>
+              <strong>${escapeHtml(tk.resCode || '-')}</strong>
+              ${tk.resCode ? `<button class="copy-code-btn" onclick="copyText('${escapeAttr(tk.resCode)}')">복사</button>` : ''}
+            </div>
+            <div><span>좌석 / 터미널</span>${escapeHtml(tk.seat || '-')}</div>
+          </div>
+          ${tk.memo ? `<div class="hint" style="margin-top:7px;">📝 ${escapeHtml(tk.memo)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function addTicket() {
+    const trip = getCurrentTrip();
+    const type = document.getElementById('tkType').value;
+    const number = document.getElementById('tkNumber').value.trim();
+    const from = document.getElementById('tkFrom').value.trim();
+    const to = document.getElementById('tkTo').value.trim();
+    const depTime = document.getElementById('tkDepTime').value.trim();
+    const arrTime = document.getElementById('tkArrTime').value.trim();
+    const resCode = document.getElementById('tkResCode').value.trim();
+    const seat = document.getElementById('tkSeat').value.trim();
+    const memo = document.getElementById('tkMemo').value.trim();
+
+    if (!from || !to) {
+      showToast('출발지와 도착지를 입력해 주세요.');
+      return;
+    }
+
+    trip.tickets.push({
+      id: 'tk_' + Date.now(),
+      type, number, from, to, depTime, arrTime, resCode, seat, memo
+    });
+
+    ['tkNumber','tkFrom','tkTo','tkDepTime','tkArrTime','tkResCode','tkSeat','tkMemo'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    saveState();
+    render();
+    showToast('티켓 정보가 저장되었습니다.');
+  }
+
+  function deleteTicket(id) {
+    const trip = getCurrentTrip();
+    trip.tickets = trip.tickets.filter(t => t.id !== id);
+    saveState();
+    render();
+  }
+
+  /* ==================== 4. 여행 경비 렌더링 ==================== */
+  function renderExpenses(trip) {
+    document.getElementById('splitCountInput').value = trip.splitCount || 4;
+    document.getElementById('fxCurrency').value = trip.fxCurrency || 'CNY';
+    document.getElementById('fxRate').value = trip.fxRate || 195;
+
+    const expDaySel = document.getElementById('expDay');
+    let dayOpts = `<option value="0">공통/사전결제</option>`;
+    for (let d = 1; d <= trip.daysCount; d++) {
+      dayOpts += `<option value="${d}">Day ${d}</option>`;
+    }
+    expDaySel.innerHTML = dayOpts;
+
+    let totalKrw = 0;
+    const byCurrency = {};
+
+    trip.expenses.forEach(ex => {
+      const amt = Number(ex.amount) || 0;
+      byCurrency[ex.currency] = (byCurrency[ex.currency] || 0) + amt;
+      if (ex.currency === 'KRW') {
+        totalKrw += amt;
+      } else if (ex.currency === trip.fxCurrency) {
+        totalKrw += amt * (Number(trip.fxRate) || 1);
+      } else {
+        const fallbackRates = { CNY: 195, JPY: 9.2, USD: 1380, EUR: 1480 };
+        totalKrw += amt * (fallbackRates[ex.currency] || 1);
+      }
+    });
+
+    const split = Math.max(1, Number(trip.splitCount) || 4);
+    const perPerson = Math.round(totalKrw / split);
+
+    document.getElementById('expTotalKrw').textContent = `${Math.round(totalKrw).toLocaleString()}원`;
+    document.getElementById('expPerPersonLabel').textContent = `1인당 부담액 (${split}명 기준)`;
+    document.getElementById('expPerPersonKrw').textContent = `${perPerson.toLocaleString()}원`;
+
+    const subParts = Object.entries(byCurrency).map(([cur, val]) => `${val.toLocaleString()} ${cur}`);
+    document.getElementById('expSubTotals').textContent = subParts.length ? `통화별: ${subParts.join(' + ')}` : '';
+
+    const listEl = document.getElementById('expenseList');
+    if (trip.expenses.length === 0) {
+      listEl.innerHTML = `<div style="text-align:center; padding:18px; color:var(--muted); font-size:0.86rem;">
+        기록된 여행 경비가 없습니다.
+      </div>`;
+      return;
+    }
+
+    listEl.innerHTML = trip.expenses.map(ex => `
+      <div class="exp-row">
+        <div>
+          <div style="font-weight:700; font-size:0.92rem;">
+            <span class="badge" style="margin-right:4px;">${ex.day == 0 ? '사전' : 'Day ' + ex.day}</span>
+            ${escapeHtml(ex.title)}
+          </div>
+          <div class="hint" style="margin-top:2px;">${escapeHtml(ex.category)}${ex.payer ? ' · ' + escapeHtml(ex.payer) : ''}</div>
+        </div>
+        <div style="text-align:right; display:flex; align-items:center; gap:8px;">
+          <strong style="font-size:0.95rem;">${Number(ex.amount).toLocaleString()} ${escapeHtml(ex.currency)}</strong>
+          <button class="ctrl-btn" style="color:var(--danger);" onclick="deleteExpense('${ex.id}')">삭제</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function updateExpenseSettings() {
+    const trip = getCurrentTrip();
+    trip.splitCount = Math.max(1, parseInt(document.getElementById('splitCountInput').value, 10) || 4);
+    trip.fxCurrency = document.getElementById('fxCurrency').value;
+    trip.fxRate = parseFloat(document.getElementById('fxRate').value) || 1;
+    saveState();
+    renderExpenses(trip);
+  }
+
+  function addExpense() {
+    const trip = getCurrentTrip();
+    const day = parseInt(document.getElementById('expDay').value, 10);
+    const category = document.getElementById('expCat').value;
+    const title = document.getElementById('expTitle').value.trim();
+    const currency = document.getElementById('expCurrency').value;
+    const amount = parseFloat(document.getElementById('expAmount').value);
+    const payer = document.getElementById('expPayer').value.trim();
+
+    if (!title || isNaN(amount) || amount <= 0) {
+      showToast('지출 내역과 올바른 금액을 입력해 주세요.');
+      return;
+    }
+
+    trip.expenses.push({
+      id: 'ex_' + Date.now(),
+      day, category, title, currency, amount, payer
+    });
+
+    document.getElementById('expTitle').value = '';
+    document.getElementById('expAmount').value = '';
+    document.getElementById('expPayer').value = '';
+    saveState();
+    render();
+    showToast('경비가 기록되었습니다.');
+  }
+
+  function deleteExpense(id) {
+    const trip = getCurrentTrip();
+    trip.expenses = trip.expenses.filter(e => e.id !== id);
+    saveState();
+    render();
+  }
+
+  /* ==================== AI 장소·맛집 추천 (gemini-3.8-flash) ==================== */
+  function toggleRecommendPanel() {
+    recOpen = !recOpen;
+    document.getElementById('recommendBody').style.display = recOpen ? 'block' : 'none';
+    document.getElementById('recToggleText').textContent = recOpen ? '접기 ▲' : '펼치기 ▼';
+  }
+
+  function updateRecButtonLabel() {
+    const btn = document.getElementById('recActionBtn');
+    if (settings.geminiApiKey) {
+      btn.textContent = '✨ AI 맞춤 명소·맛집 6곳 추천받기';
+    } else {
+      btn.textContent = '📋 AI 추천 프롬프트 복사 (API 키 미설정 시)';
+    }
+  }
+
+  async function handleRecommend() {
+    const city = document.getElementById('recCity').value.trim();
+    const focus = document.getElementById('recFocus').value;
+    const style = document.getElementById('recStyle').value.trim() || '대표 명소와 맛집 균형';
+    const trip = getCurrentTrip();
+
+    if (!city) {
+      showToast('여행지를 입력해 주세요.');
+      return;
+    }
+
+    if (!settings.geminiApiKey) {
+      const prompt = `${city} ${trip.daysCount}일 여행을 계획 중입니다. 추천 유형은 '${focus}', 세부 조건은 '${style}'입니다. 방문하기 좋은 핵심 명소와 맛집 6곳을 예상 소요시간, 추천 시간대, 대표 메뉴/관람 팁과 함께 추천해 주세요.`;
+      await navigator.clipboard.writeText(prompt);
+      document.getElementById('recStatus').textContent = 'API 키가 없어 질문 프롬프트를 복사했습니다. [⚙️ 설정]에 무료 Gemini API 키를 등록하면 앱 안에서 바로 추천 카드가 뜹니다.';
+      showToast('프롬프트가 복사되었습니다!');
+      return;
+    }
+
+    const btn = document.getElementById('recActionBtn');
+    const statusEl = document.getElementById('recStatus');
+    const resultsEl = document.getElementById('recResults');
+
+    btn.disabled = true;
+    btn.textContent = '명소와 맛집을 찾는 중...';
+    statusEl.textContent = '';
+    resultsEl.innerHTML = '';
+
+    const systemPrompt = `당신은 여행 일정 플래너 도우미입니다. 사용자가 입력한 여행지와 조건에 맞춰 방문하기 좋은 장소(명소 또는 맛집) 6곳을 추천하세요.
+반드시 아래 JSON 배열 형식으로만 응답하고 다른 설명이나 마크다운 코드블록은 쓰지 마세요.
+[{"name":"장소명 또는 식당명","category":"관광 또는 맛집 또는 카페 또는 쇼핑","duration":"예상 소요시간 (예: 1시간 30분)","desc":"추천 이유, 대표 메뉴 또는 관람 팁 1~2문장","suggestedTime":"12:00"}]`;
+
+    const userPrompt = `여행지: ${city}, 일정: ${trip.daysCount}일, 추천 유형: ${focus}, 세부 조건: ${style}`;
+
+    try {
+      const models = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
+      let data = null;
+      let lastErr = '';
+
+      for (const model of models) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(settings.geminiApiKey)}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+            generationConfig: { temperature: 0.7 }
+          })
+        });
+
+        if (res.ok) {
+          data = await res.json();
+          break;
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          lastErr = errData.error?.message || `HTTP ${res.status}`;
+        }
+      }
+
+      if (!data) throw new Error(lastErr);
+
+      let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+      rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const places = JSON.parse(rawText);
+
+      if (!Array.isArray(places) || places.length === 0) {
+        throw new Error('추천 결과를 해석하지 못했습니다.');
+      }
+
+      renderRecommendations(places, city);
+      statusEl.textContent = `'${city}' 추천 결과 ${places.length}곳입니다. 원하는 날짜 버튼을 눌러 일정에 추가하세요.`;
+    } catch (err) {
+      statusEl.textContent = `추천 호출 오류: ${err.message}`;
+    } finally {
+      btn.disabled = false;
+      updateRecButtonLabel();
+    }
+  }
+
+  function renderRecommendations(places, city) {
+    const trip = getCurrentTrip();
+    const resultsEl = document.getElementById('recResults');
+
+    resultsEl.innerHTML = places.map(p => {
+      const isFood = p.category === '맛집' || p.category === '카페';
+      const q = encodeURIComponent(`${city} ${p.name}`);
+      const appleMap = `https://maps.apple.com/?q=${q}`;
+      const gMap = `https://www.google.com/maps/search/?api=1&query=${q}`;
+      let dayBtns = '';
+      for (let d = 1; d <= trip.daysCount; d++) {
+        dayBtns += `<button class="day-add-btn" onclick='addRecommendedPlace(${d}, ${JSON.stringify(p).replace(/'/g, "&#39;")})'>+ Day ${d}</button>`;
+      }
+      return `
+        <div class="rec-item">
+          <div class="rec-top">
+            <div>
+              <span class="rec-name">${escapeHtml(p.name)}</span>
+              ${p.duration ? `<span class="badge dur" style="margin-left:4px;">⏱ ${escapeHtml(p.duration)}</span>` : ''}
+            </div>
+            <span class="badge ${isFood ? 'food' : ''}">${escapeHtml(p.category || '관광')}</span>
+          </div>
+          <div class="rec-desc">${escapeHtml(p.desc || '')}</div>
+          <div class="rec-actions">
+            ${dayBtns}
+            <a class="map-btn apple" href="${appleMap}" target="_blank" rel="noopener">🍎 애플지도</a>
+            <a class="map-btn" href="${gMap}" target="_blank" rel="noopener">구글맵</a>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function addRecommendedPlace(day, placeObj) {
+    const trip = getCurrentTrip();
+    trip.items.push({
+      id: 'item_' + Date.now() + Math.random().toString(36).slice(2, 6),
+      day,
+      time: placeObj.suggestedTime || '12:00',
+      place: placeObj.name,
+      category: placeObj.category || '관광',
+      duration: placeObj.duration || '',
+      nextTransit: '',
+      memo: placeObj.desc || '',
+      done: false
+    });
+    state.selectedDay = day;
+    saveState();
+    render();
+    showToast(`'${placeObj.name}' → Day ${day}에 추가됨`);
+  }
+
+  /* ==================== 공통 제어 및 동기화 ==================== */
+  function switchTrip(id) {
+    state.currentTripId = id;
+    state.selectedDay = 1;
+    const trip = getCurrentTrip();
+    document.getElementById('recCity').value = trip ? trip.destination : '';
+    document.getElementById('recResults').innerHTML = '';
+    saveState();
+    render();
+  }
+
+  function selectDay(day) {
+    state.selectedDay = day;
+    render();
+  }
+
+  function openNewTripModal() {
+    document.getElementById('newTitle').value = '';
+    document.getElementById('newDest').value = '';
+    document.getElementById('newTripModal').classList.add('open');
+  }
+
+  function createNewTrip() {
+    const title = document.getElementById('newTitle').value.trim();
+    const dest = document.getElementById('newDest').value.trim();
+    const daysCount = parseInt(document.getElementById('newDays').value, 10) || 3;
+
+    if (!title || !dest) {
+      showToast('여행 제목과 여행지를 모두 입력해 주세요.');
+      return;
+    }
+
+    const id = 'trip_' + Date.now();
+    state.trips.unshift({
+      id,
+      title,
+      destination: dest,
+      daysCount,
+      splitCount: 4,
+      fxCurrency: 'CNY',
+      fxRate: 195,
+      items: [],
+      bookings: [],
+      tickets: [],
+      expenses: []
+    });
+    state.currentTripId = id;
+    state.selectedDay = 1;
+    document.getElementById('recCity').value = dest;
+    document.getElementById('recResults').innerHTML = '';
+    saveState();
+    closeModal('newTripModal');
+    render();
+    showToast('새 여행이 생성되었습니다.');
+  }
+
+  function deleteCurrentTrip() {
+    if (state.trips.length <= 1) {
+      showToast('최소 1개의 여행 일정은 유지되어야 합니다.');
+      return;
+    }
+    const trip = getCurrentTrip();
+    if (!confirm(`'${trip.title}' 일정을 삭제할까요?`)) return;
+    state.trips = state.trips.filter(t => t.id !== trip.id);
+    state.currentTripId = state.trips[0].id;
+    state.selectedDay = 1;
+    saveState();
+    render();
+    showToast('삭제되었습니다.');
+  }
+
+  async function copyShareText() {
+    const trip = getCurrentTrip();
+    let lines = [`[✈️ ${trip.title} (${trip.destination})]`, ''];
+
+    if (trip.bookings.length > 0) {
+      lines.push('🏨 [숙소 · 바우처 예약]');
+      trip.bookings.forEach(bk => {
+        lines.push(`  • [${bk.type}] ${bk.title} (${bk.date || ''}) ${bk.code ? '예약번호:' + bk.code : ''}`);
+      });
+      lines.push('');
+    }
+
+    if (trip.tickets.length > 0) {
+      lines.push('🎫 [교통·티켓]');
+      trip.tickets.forEach(tk => {
+        lines.push(`  • [${tk.type}] ${tk.from} → ${tk.to} (${tk.depTime || ''}) ${tk.number ? '편명:' + tk.number : ''} ${tk.resCode ? '예약:' + tk.resCode : ''}`);
+      });
+      lines.push('');
+    }
+
+    for (let d = 1; d <= trip.daysCount; d++) {
+      lines.push(`📅 [Day ${d}]`);
+      const items = trip.items.filter(x => x.day === d);
+      if (items.length === 0) {
+        lines.push('  - 일정 없음');
+      } else {
+        items.forEach((it, idx) => {
+          const durStr = it.duration ? ` (체류 ${it.duration})` : '';
+          lines.push(`  • ${it.time} ${it.place} [${it.category}]${durStr}${it.memo ? ' - ' + it.memo : ''}`);
+          if (idx < items.length - 1 && it.nextTransit) {
+            lines.push(`     ↳ 이동: ${it.nextTransit}`);
+          }
+        });
+      }
+      lines.push('');
+    }
+
+    await navigator.clipboard.writeText(lines.join('\n').trim());
+    showToast('예약·티켓과 전체 일정이 클립보드에 복사되었습니다.');
+  }
+
+  function openSettingsModal() {
+    document.getElementById('geminiKeyInput').value = settings.geminiApiKey || '';
+    document.getElementById('settingsModal').classList.add('open');
+  }
+
+  function saveSettings() {
+    settings.geminiApiKey = document.getElementById('geminiKeyInput').value.trim();
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    updateRecButtonLabel();
+    closeModal('settingsModal');
+    showToast('설정이 저장되었습니다.');
+  }
+
+  function openSyncModal() {
+    document.getElementById('gistTokenInput').value = settings.gistToken || '';
+    document.getElementById('gistIdInput').value = settings.gistId || '';
+    document.getElementById('syncModal').classList.add('open');
+  }
+
+  async function syncToGist(mode) {
+    const token = document.getElementById('gistTokenInput').value.trim();
+    let gistId = document.getElementById('gistIdInput').value.trim();
+
+    if (!token) {
+      showToast('GitHub Token을 입력해 주세요.');
+      return;
+    }
+
+    settings.gistToken = token;
+    settings.gistId = gistId;
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+
+    const FILE_NAME = 'trip-planner-data.json';
+
+    try {
+      if (mode === 'upload') {
+        const body = {
+          description: 'Trip Planner Sync Data',
+          public: false,
+          files: {
+            [FILE_NAME]: { content: JSON.stringify(state, null, 2) }
+          }
+        };
+        const url = gistId ? `https://api.github.com/gists/${gistId}` : 'https://api.github.com/gists';
+        const method = gistId ? 'PATCH' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        settings.gistId = data.id;
+        document.getElementById('gistIdInput').value = data.id;
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        showToast('Gist에 전체 데이터가 저장되었습니다!');
+      } else {
+        if (!gistId) {
+          showToast('불러올 Gist ID를 입력해 주세요.');
+          return;
+        }
+        const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github+json'
+          }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const file = data.files?.[FILE_NAME];
+        if (!file || !file.content) throw new Error('저장된 여행 데이터가 없습니다.');
+
+        state = JSON.parse(file.content);
+        saveState();
+        render();
+        showToast('Gist에서 데이터를 불러왔습니다!');
+      }
+    } catch (err) {
+      showToast(`동기화 실패: ${err.message}`);
+    }
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function escapeAttr(str) {
+    return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  }
+
+  loadAll();
+</script>
+</body>
+</html>
