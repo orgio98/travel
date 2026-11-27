@@ -216,13 +216,20 @@
     }
 
     /* Day Tabs */
+    .day-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
     .day-tabs {
       display: flex;
       gap: 6px;
       overflow-x: auto;
       padding-bottom: 4px;
-      margin-bottom: 12px;
       scrollbar-width: none;
+      flex: 1;
     }
     .day-tabs::-webkit-scrollbar { display: none; }
     .day-tab {
@@ -606,7 +613,7 @@
           </select>
           <input type="text" id="recStyle" class="full" placeholder="세부 조건 (예: 성인 4인, 이동 편한 곳, 대표 음식 추천)" />
           <button class="btn-sm primary full" id="recActionBtn" style="padding:10px;" onclick="handleRecommend()">
-            AI 맞춤 명소·맛집 12곳 추천받기
+            AI 맞춤 추천 12곳 불러오기
           </button>
         </div>
         <div id="recStatus" class="hint" style="margin-top:8px;"></div>
@@ -624,7 +631,10 @@
         </div>
       </div>
 
-      <div class="day-tabs" id="dayTabs"></div>
+      <div class="day-toolbar">
+        <div class="day-tabs" id="dayTabs"></div>
+        <button class="btn-sm" onclick="sortCurrentDayByTime()" title="방문 시각 순서대로 정렬">🕒 시간순</button>
+      </div>
       <div class="timeline-list" id="timelineList"></div>
 
       <!-- 수동 일정 추가 폼 -->
@@ -918,9 +928,74 @@
     '서귀포', '우도', '성산', '애월', '중문'
   ];
 
+  const FAR_KEYWORDS = [
+    '주가각', '디즈니', '공항', '푸동', '홍차오', '우도', '성산', '천지', '비에이',
+    '테시카가', '오타루', '남해', '정선', '속초', '강릉', '경주 불국사', '외곽', '근교'
+  ];
+
   function checkIsDomestic(destStr) {
     if (!destStr) return false;
     return KOREA_KEYWORDS.some(k => destStr.includes(k));
+  }
+
+  function parseTimeToMinutes(timeStr) {
+    if (!timeStr || !timeStr.includes(':')) return null;
+    const [h, m] = timeStr.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return null;
+    return h * 60 + m;
+  }
+
+  function formatMinutesToTime(totalMins) {
+    const clamped = Math.max(0, Math.min(23 * 60 + 50, totalMins));
+    const h = Math.floor(clamped / 60);
+    const m = clamped % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  }
+
+  function parseDurationToMinutes(durStr, fallbackCategory = '관광') {
+    if (durStr) {
+      let mins = 0;
+      const hrMatch = durStr.match(/(\d+(?:\.\d+)?)\s*시간/);
+      const minMatch = durStr.match(/(\d+)\s*분/);
+      if (hrMatch) mins += Math.round(parseFloat(hrMatch[1]) * 60);
+      if (minMatch) mins += parseInt(minMatch[1], 10);
+      if (mins > 0) return mins;
+    }
+    if (fallbackCategory === '맛집') return 75;
+    if (fallbackCategory === '카페') return 60;
+    return 90;
+  }
+
+  function estimateTransitMinutes(prevPlace, nextPlace) {
+    const combined = `${prevPlace || ''} ${nextPlace || ''}`;
+    if (FAR_KEYWORDS.some(k => combined.includes(k))) {
+      return 60;
+    }
+    return 30;
+  }
+
+  function computeSmartScheduleForDay(dayItems, newPlaceName, newCategory, fallbackSuggestedTime) {
+    if (!Array.isArray(dayItems) || dayItems.length === 0) {
+      const startMins = parseTimeToMinutes(fallbackSuggestedTime) ?? (10 * 60);
+      return {
+        suggestedTime: formatMinutesToTime(startMins),
+        prevTransitNote: ''
+      };
+    }
+
+    const lastItem = dayItems[dayItems.length - 1];
+    const lastStartMins = parseTimeToMinutes(lastItem.time) ?? (10 * 60);
+    const stayMins = parseDurationToMinutes(lastItem.duration, lastItem.category);
+    const transitMins = estimateTransitMinutes(lastItem.place, newPlaceName);
+    const rawNextMins = lastStartMins + stayMins + transitMins;
+    const roundedNextMins = Math.round(rawNextMins / 10) * 10;
+
+    return {
+      suggestedTime: formatMinutesToTime(roundedNextMins),
+      transitMins,
+      prevItemId: lastItem.id,
+      prevTransitNote: `예상 이동 약 ${transitMins}분 (확인 필요)`
+    };
   }
 
   let state = {
@@ -943,7 +1018,7 @@
     const el = document.getElementById('toast');
     el.textContent = msg;
     el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 2400);
+    setTimeout(() => el.classList.remove('show'), 2600);
   }
 
   function loadAll() {
@@ -1130,6 +1205,13 @@
       const isFood = item.category === '맛집' || item.category === '카페';
       const placeMaps = buildPlaceMapLinks(trip.destination, item.place, trip.isDomestic);
 
+      const startMins = parseTimeToMinutes(item.time);
+      const stayMins = parseDurationToMinutes(item.duration, item.category);
+      let timeDisplay = escapeHtml(item.time || '--:--');
+      if (startMins !== null && item.duration) {
+        timeDisplay += ` ~ ${formatMinutesToTime(startMins + stayMins)}`;
+      }
+
       let transitHtml = '';
       if (idx < dayItems.length - 1) {
         const nextItem = dayItems[idx + 1];
@@ -1154,9 +1236,9 @@
         <div class="item-card ${item.done ? 'done' : ''}">
           <div class="item-row1">
             <input type="checkbox" class="item-check" ${item.done ? 'checked' : ''} onchange="toggleDone('${item.id}')" />
-            <span class="item-time">${escapeHtml(item.time || '--:--')}</span>
+            <span class="item-time">${timeDisplay}</span>
             <span class="badge ${isFood ? 'food' : ''}">${escapeHtml(item.category)}</span>
-            ${item.duration ? `<span class="badge dur">⏱ ${escapeHtml(item.duration)}</span>` : ''}
+            ${item.duration ? `<span class="badge dur">⏱ 체류 ${escapeHtml(item.duration)}</span>` : ''}
             <span class="item-place">${escapeHtml(item.place)}</span>
           </div>
           ${item.memo ? `<div class="item-memo">${escapeHtml(item.memo)}</div>` : ''}
@@ -1177,6 +1259,18 @@
     }).join('');
   }
 
+  function sortCurrentDayByTime() {
+    const trip = getCurrentTrip();
+    const dayItems = trip.items
+      .filter(x => x.day === state.selectedDay)
+      .sort((a, b) => (parseTimeToMinutes(a.time) ?? 9999) - (parseTimeToMinutes(b.time) ?? 9999));
+    const otherItems = trip.items.filter(x => x.day !== state.selectedDay);
+    trip.items = [...otherItems, ...dayItems];
+    saveState();
+    render();
+    showToast(`Day ${state.selectedDay} 일정이 시간순으로 정렬되었습니다.`);
+  }
+
   function addManualItem() {
     const trip = getCurrentTrip();
     const time = document.getElementById('addTime').value || '10:00';
@@ -1188,6 +1282,15 @@
     if (!place) {
       showToast('장소명 또는 식당명을 입력해 주세요.');
       return;
+    }
+
+    const dayItems = trip.items.filter(x => x.day === state.selectedDay);
+    if (dayItems.length > 0) {
+      const lastItem = dayItems[dayItems.length - 1];
+      if (!lastItem.nextTransit) {
+        const estMins = estimateTransitMinutes(lastItem.place, place);
+        lastItem.nextTransit = `예상 이동 약 ${estMins}분 (확인 필요)`;
+      }
     }
 
     trip.items.push({
@@ -1563,7 +1666,7 @@
     render();
   }
 
-  /* ==================== AI 장소·맛집 추천 (엄격 필터링 + 검색 그라운딩) ==================== */
+  /* ==================== AI 장소·맛집 추천 ==================== */
   function toggleRecommendPanel() {
     recOpen = !recOpen;
     document.getElementById('recommendBody').style.display = recOpen ? 'block' : 'none';
@@ -1689,7 +1792,6 @@
       let isGrounded = false;
       let lastErr = '';
 
-      // 1단계: 실시간 Google 검색 그라운딩으로 실존 장소 검증 호출 시도
       try {
         data = await callGeminiOnce('gemini-3.5-flash-lite', promptObj, true);
         isGrounded = !!(data?.candidates?.[0]?.groundingMetadata?.webSearchQueries?.length);
@@ -1698,7 +1800,6 @@
         data = null;
       }
 
-      // 2단계: 무료 티어 제한 등으로 검색 그라운딩 실패 시 고속 JSON 모드로 즉시 폴백
       if (!data) {
         const fallbackModels = ['gemini-3.5-flash-lite', 'gemini-3.8-flash'];
         for (const m of fallbackModels) {
@@ -1716,7 +1817,6 @@
       const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
       let places = extractJsonArray(rawText);
 
-      // 유형별 클라이언트 2차 안전 필터링
       if (focusCode === 'food_only') {
         places = places.filter(p => p.category === '맛집' || p.category === '카페');
       } else if (focusCode === 'sight_only') {
@@ -1749,7 +1849,10 @@
       const placeMaps = buildPlaceMapLinks(city, p.name, isDom);
       let dayBtns = '';
       for (let d = 1; d <= trip.daysCount; d++) {
-        dayBtns += `<button class="day-add-btn" onclick='addRecommendedPlace(${d}, ${JSON.stringify(p).replace(/'/g, "&#39;")})'>+ Day ${d}</button>`;
+        const dayItems = trip.items.filter(x => x.day === d);
+        const smart = computeSmartScheduleForDay(dayItems, p.name, p.category, p.suggestedTime);
+        const hintLabel = dayItems.length > 0 ? `+ Day ${d} (${smart.suggestedTime} 제안)` : `+ Day ${d} (${smart.suggestedTime})`;
+        dayBtns += `<button class="day-add-btn" onclick='addRecommendedPlace(${d}, ${JSON.stringify(p).replace(/'/g, "&#39;")})'>${hintLabel}</button>`;
       }
       return `
         <div class="rec-item">
@@ -1772,10 +1875,20 @@
 
   function addRecommendedPlace(day, placeObj) {
     const trip = getCurrentTrip();
+    const dayItems = trip.items.filter(x => x.day === day);
+    const smart = computeSmartScheduleForDay(dayItems, placeObj.name, placeObj.category, placeObj.suggestedTime);
+
+    if (smart.prevItemId && smart.prevTransitNote) {
+      const prevItem = trip.items.find(x => x.id === smart.prevItemId);
+      if (prevItem && !prevItem.nextTransit) {
+        prevItem.nextTransit = smart.prevTransitNote;
+      }
+    }
+
     trip.items.push({
       id: 'item_' + Date.now() + Math.random().toString(36).slice(2, 6),
       day,
-      time: placeObj.suggestedTime || '12:00',
+      time: smart.suggestedTime,
       place: placeObj.name,
       category: placeObj.category || '관광',
       duration: placeObj.duration || '',
@@ -1783,10 +1896,11 @@
       memo: placeObj.desc || '',
       done: false
     });
+
     state.selectedDay = day;
     saveState();
     render();
-    showToast(`'${placeObj.name}' → Day ${day}에 추가됨`);
+    showToast(`'${placeObj.name}' → Day ${day} ${smart.suggestedTime} 제안됨`);
   }
 
   /* ==================== 공통 제어 및 동기화 ==================== */
