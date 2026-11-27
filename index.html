@@ -600,9 +600,9 @@
         <div class="ai-form">
           <input type="text" id="recCity" placeholder="여행지 (예: 상하이, 경주, 제주)" />
           <select id="recFocus">
-            <option value="명소와 로컬 맛집 균형">🎯 명소 + 맛집 균형 추천</option>
-            <option value="현지인 추천 필수 맛집과 카페">🍽️ 현지 맛집·디저트 집중</option>
-            <option value="핵심 관광 명소와 야경 스팟">🏛️ 핵심 관광지·야경 집중</option>
+            <option value="balanced">🎯 명소 + 맛집 균형 추천</option>
+            <option value="food_only">🍽️ 현지 맛집·디저트 집중 (식당/카페만)</option>
+            <option value="sight_only">🏛️ 핵심 관광지·야경 집중 (명소만)</option>
           </select>
           <input type="text" id="recStyle" class="full" placeholder="세부 조건 (예: 성인 4인, 이동 편한 곳, 대표 음식 추천)" />
           <button class="btn-sm primary full" id="recActionBtn" style="padding:10px;" onclick="handleRecommend()">
@@ -1563,7 +1563,7 @@
     render();
   }
 
-  /* ==================== AI 장소·맛집 추천 (12곳 · 고속 호출) ==================== */
+  /* ==================== AI 장소·맛집 추천 (엄격 필터링 + 검색 그라운딩) ==================== */
   function toggleRecommendPanel() {
     recOpen = !recOpen;
     document.getElementById('recommendBody').style.display = recOpen ? 'block' : 'none';
@@ -1573,16 +1573,82 @@
   function updateRecButtonLabel() {
     const btn = document.getElementById('recActionBtn');
     if (settings.geminiApiKey) {
-      btn.textContent = `✨ AI 맞춤 명소·맛집 ${REC_COUNT}곳 추천받기`;
+      btn.textContent = `✨ AI 맞춤 추천 ${REC_COUNT}곳 불러오기`;
     } else {
       btn.textContent = `📋 AI 추천 프롬프트 복사 (${REC_COUNT}곳 기준)`;
     }
   }
 
+  function buildPromptByFocus(city, daysCount, focusCode, style) {
+    if (focusCode === 'food_only') {
+      return {
+        system: `당신은 미식 여행 전문 큐레이터입니다. 반드시 실제 영업 중인 '식당(맛집)'과 '카페/디저트'만 정확히 ${REC_COUNT}곳 추천하세요.
+[절대 금지] 박물관, 공원, 유적지, 전망대, 거리 등 관광지·명소는 단 1곳도 포함하지 마세요. 오직 음식을 먹거나 마시는 식당·카페만 출력하세요.
+반드시 순수 JSON 배열만 출력하세요:
+[{"name":"실제 식당 또는 카페 상호명","category":"맛집 또는 카페","duration":"1시간","desc":"대표 메뉴와 특징 20자 내외","suggestedTime":"12:30"}]`,
+        user: `여행지: ${city}, 세부 조건: ${style}. 실제 현지인이 찾는 맛집 8곳 + 카페/디저트 4곳 = 총 ${REC_COUNT}곳을 JSON 배열로 출력하세요.`
+      };
+    } else if (focusCode === 'sight_only') {
+      return {
+        system: `당신은 여행 코스 플래너입니다. 반드시 실제 존재하는 '관광 명소·공원·박물관·야경 스팟'만 정확히 ${REC_COUNT}곳 추천하세요.
+[절대 금지] 일반 식당이나 카페는 포함하지 마세요.
+반드시 순수 JSON 배열만 출력하세요:
+[{"name":"실제 관광 명소명","category":"관광","duration":"1시간 30분","desc":"핵심 관람 포인트 20자 내외","suggestedTime":"10:00"}]`,
+        user: `여행지: ${city}, 여행 일수: ${daysCount}일, 세부 조건: ${style}. 핵심 관광 명소 ${REC_COUNT}곳을 JSON 배열로 출력하세요.`
+      };
+    } else {
+      return {
+        system: `당신은 여행 플래너입니다. 실제 존재하는 관광 명소 6곳과 현지 맛집/카페 6곳을 합쳐 총 ${REC_COUNT}곳을 추천하세요.
+반드시 순수 JSON 배열만 출력하세요:
+[{"name":"실제 장소명 또는 상호명","category":"관광 또는 맛집 또는 카페","duration":"1시간 30분","desc":"대표 메뉴 또는 관람 팁 20자 내외","suggestedTime":"12:00"}]`,
+        user: `여행지: ${city}, 여행 일수: ${daysCount}일, 세부 조건: ${style}. 관광 6곳 + 맛집/카페 6곳 = 총 ${REC_COUNT}곳을 JSON 배열로 출력하세요.`
+      };
+    }
+  }
+
+  async function callGeminiOnce(model, promptObj, useSearchGrounding) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(settings.geminiApiKey)}`;
+    const payload = {
+      contents: [{ parts: [{ text: `${promptObj.system}\n\n${promptObj.user}` }] }],
+      generationConfig: {
+        temperature: 0.4,
+        maxOutputTokens: 2048
+      }
+    };
+
+    if (useSearchGrounding) {
+      payload.tools = [{ google_search: {} }];
+    } else {
+      payload.generationConfig.responseMimeType = 'application/json';
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `HTTP ${res.status}`);
+    }
+    return await res.json();
+  }
+
+  function extractJsonArray(rawText) {
+    const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const start = cleaned.indexOf('[');
+    const end = cleaned.lastIndexOf(']');
+    if (start === -1 || end === -1 || end <= start) {
+      throw new Error('JSON 배열 형식을 찾지 못했습니다.');
+    }
+    return JSON.parse(cleaned.slice(start, end + 1));
+  }
+
   async function handleRecommend() {
     const city = document.getElementById('recCity').value.trim();
-    const focus = document.getElementById('recFocus').value;
-    const style = document.getElementById('recStyle').value.trim() || '대표 명소와 맛집 균형';
+    const focusCode = document.getElementById('recFocus').value;
+    const style = document.getElementById('recStyle').value.trim() || '현지인 인기 장소';
     const trip = getCurrentTrip();
 
     if (!city) {
@@ -1591,78 +1657,80 @@
     }
 
     if (!settings.geminiApiKey) {
-      const prompt = `${city} ${trip.daysCount}일 여행을 계획 중입니다. 추천 유형은 '${focus}', 세부 조건은 '${style}'입니다. 방문하기 좋은 핵심 명소와 맛집 ${REC_COUNT}곳을 예상 소요시간, 추천 시간대, 대표 메뉴/관람 팁과 함께 간결하게 추천해 주세요.`;
+      const focusLabel = focusCode === 'food_only' ? '현지 맛집과 카페만' : (focusCode === 'sight_only' ? '핵심 관광 명소만' : '명소와 맛집 균형으로');
+      const prompt = `${city} ${trip.daysCount}일 여행을 계획 중입니다. ${focusLabel} ${REC_COUNT}곳을 추천해 주세요. 세부 조건: '${style}'. 실존하는 상호명/장소명과 대표 메뉴 또는 관람 팁을 함께 알려주세요.`;
       await navigator.clipboard.writeText(prompt);
       document.getElementById('recStatus').textContent = 'API 키가 없어 질문 프롬프트를 복사했습니다. [⚙️ 설정]에 무료 Gemini API 키를 등록하면 앱 안에서 바로 추천 카드가 뜹니다.';
       showToast('프롬프트가 복사되었습니다!');
       return;
     }
 
-    const cacheKey = `${city}|${trip.daysCount}|${focus}|${style}`;
+    const cacheKey = `${city}|${trip.daysCount}|${focusCode}|${style}`;
     const statusEl = document.getElementById('recStatus');
     const resultsEl = document.getElementById('recResults');
 
     if (recCache.has(cacheKey)) {
       const cached = recCache.get(cacheKey);
-      renderRecommendations(cached, city);
-      statusEl.textContent = `'${city}' 추천 ${cached.length}곳 (즉시 표시됨)`;
+      renderRecommendations(cached.places, city);
+      statusEl.textContent = `'${city}' 추천 ${cached.places.length}곳 (${cached.sourceLabel} · 캐시 즉시 표시)`;
       return;
     }
 
     const btn = document.getElementById('recActionBtn');
     btn.disabled = true;
-    btn.textContent = `명소·맛집 ${REC_COUNT}곳 빠르게 찾는 중...`;
+    btn.textContent = `실존 장소 ${REC_COUNT}곳 검색·정리 중...`;
     statusEl.textContent = '';
     resultsEl.innerHTML = '';
 
-    const systemPrompt = `당신은 여행 플래너입니다. 입력 조건에 맞춰 명소와 맛집 ${REC_COUNT}곳을 JSON 배열로만 출력하세요. 마크다운 기호나 부연설명 금지.
-각 항목은 짧고 간결하게 작성하세요:
-[{"name":"장소명","category":"관광 또는 맛집 또는 카페","duration":"1시간 30분","desc":"20자 내외 핵심 한줄 팁","suggestedTime":"12:00"}]`;
-
-    const userPrompt = `도시:${city}, 일수:${trip.daysCount}일, 유형:${focus}, 조건:${style}`;
+    const promptObj = buildPromptByFocus(city, trip.daysCount, focusCode, style);
 
     try {
-      const models = ['gemini-3.5-flash-lite', 'gemini-3.8-flash'];
       let data = null;
+      let isGrounded = false;
       let lastErr = '';
 
-      for (const model of models) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(settings.geminiApiKey)}`;
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: `${systemPrompt}\n${userPrompt}` }] }],
-            generationConfig: {
-              temperature: 0.6,
-              maxOutputTokens: 2048,
-              responseMimeType: 'application/json'
-            }
-          })
-        });
+      // 1단계: 실시간 Google 검색 그라운딩으로 실존 장소 검증 호출 시도
+      try {
+        data = await callGeminiOnce('gemini-3.5-flash-lite', promptObj, true);
+        isGrounded = !!(data?.candidates?.[0]?.groundingMetadata?.webSearchQueries?.length);
+      } catch (e) {
+        lastErr = e.message;
+        data = null;
+      }
 
-        if (res.ok) {
-          data = await res.json();
-          break;
-        } else {
-          const errData = await res.json().catch(() => ({}));
-          lastErr = errData.error?.message || `HTTP ${res.status}`;
+      // 2단계: 무료 티어 제한 등으로 검색 그라운딩 실패 시 고속 JSON 모드로 즉시 폴백
+      if (!data) {
+        const fallbackModels = ['gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+        for (const m of fallbackModels) {
+          try {
+            data = await callGeminiOnce(m, promptObj, false);
+            break;
+          } catch (e) {
+            lastErr = e.message;
+          }
         }
       }
 
       if (!data) throw new Error(lastErr);
 
-      let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
-      rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-      const places = JSON.parse(rawText);
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+      let places = extractJsonArray(rawText);
 
-      if (!Array.isArray(places) || places.length === 0) {
-        throw new Error('추천 결과를 해석하지 못했습니다.');
+      // 유형별 클라이언트 2차 안전 필터링
+      if (focusCode === 'food_only') {
+        places = places.filter(p => p.category === '맛집' || p.category === '카페');
+      } else if (focusCode === 'sight_only') {
+        places = places.filter(p => p.category === '관광');
       }
 
-      recCache.set(cacheKey, places);
+      if (!Array.isArray(places) || places.length === 0) {
+        throw new Error('조건에 맞는 추천 결과를 찾지 못했습니다.');
+      }
+
+      const sourceLabel = isGrounded ? 'Google 실시간 웹검색 기반' : 'Gemini AI 지식 기반 (지도 버튼으로 영업 확인 권장)';
+      recCache.set(cacheKey, { places, sourceLabel });
       renderRecommendations(places, city);
-      statusEl.textContent = `'${city}' 추천 장소 ${places.length}곳입니다. 원하는 날짜 버튼을 눌러 일정에 추가하세요.`;
+      statusEl.textContent = `'${city}' 추천 ${places.length}곳 (${sourceLabel})`;
     } catch (err) {
       statusEl.textContent = `추천 호출 오류: ${err.message}`;
     } finally {
