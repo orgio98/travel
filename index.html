@@ -624,6 +624,9 @@
     .stop-line .stop-from { flex: 0 0 54px; }
     .stop-line .stop-type { flex: 1.5; }
     .stop-day { font-size: 0.8rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+    .imp-row { display: flex; gap: 9px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+    .imp-row input { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; accent-color: var(--primary); }
+    .ticket-top { flex-wrap: wrap; }
     .plan-day { margin: 10px 0; }
     .plan-day-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; }
     .plan-row { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--border); }
@@ -733,6 +736,7 @@
   <section id="tab-bookings" class="view-section">
     <div class="card">
       <div class="section-title" style="margin-bottom:12px;">🏨 숙소 · 투어 · 입장권 바우처 보관함</div>
+      <button class="btn-sm primary" style="width:100%; padding:10px; margin-bottom:12px;" onclick="openImportModal()">📥 예약 메일·스크린샷으로 자동 입력</button>
       <div id="bookingList"></div>
 
       <div class="form-grid divider-top">
@@ -760,6 +764,7 @@
   <section id="tab-tickets" class="view-section">
     <div class="card">
       <div class="section-title" style="margin-bottom:12px;">🎫 저장된 이동 티켓 (비행기 · 기차 · 버스)</div>
+      <button class="btn-sm primary" style="width:100%; padding:10px; margin-bottom:12px;" onclick="openImportModal()">📥 예약 메일·스크린샷으로 자동 입력</button>
       <div id="ticketList"></div>
 
       <div class="form-grid divider-top">
@@ -941,6 +946,39 @@
     <div class="modal-actions">
       <button class="btn-sm" onclick="closeModal('newTripModal')">취소</button>
       <button class="btn-sm primary" id="tripModalSubmit" onclick="submitTripModal()">생성하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 예약 정보 자동 입력 모달 -->
+<div class="modal-backdrop" id="importModal">
+  <div class="modal">
+    <h3>📥 예약 정보 자동 입력</h3>
+    <div class="hint" style="margin:-4px 0 10px;">항공권·기차표·호텔·투어 예약 확인서를 넣으면 AI가 칸에 맞춰 정리합니다. 왕복 항공권과 호텔이 한 메일에 있어도 한 번에 나눠 담습니다.</div>
+    <div class="field">
+      <label>예약 확인 메일·문자 붙여넣기</label>
+      <textarea id="impText" rows="5" placeholder="예약 확인 메일이나 문자 내용을 통째로 붙여넣으세요"></textarea>
+    </div>
+    <div class="field">
+      <label>또는 스크린샷 · PDF (e티켓, 바우처)</label>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <button class="btn-sm" style="padding:8px 10px;" onclick="document.getElementById('impFile').click()">📷 파일 선택</button>
+        <span id="impFileName" class="hint" style="margin:0;"></span>
+        <button class="ctrl-btn" id="impFileClear" style="display:none;" onclick="clearImportFile()">✕</button>
+      </div>
+      <input type="file" id="impFile" accept="image/*,application/pdf" style="display:none;" onchange="onImportFileChange(this)" />
+    </div>
+    <button class="btn-sm primary" id="impRunBtn" style="width:100%; padding:10px;" onclick="runImport()">✨ AI로 자동 정리하기</button>
+    <div class="hint">넣은 내용은 정리를 위해 내 Gemini API 키로 Google에 전송됩니다.</div>
+    <div id="impStatus" class="hint" style="margin-top:8px;"></div>
+    <details id="impPasteBox" style="margin-top:10px;">
+      <summary style="font-size:0.8rem; font-weight:600; color:var(--muted); cursor:pointer;">다른 AI의 답변(JSON) 붙여넣어 가져오기</summary>
+      <textarea id="impPaste" rows="4" style="width:100%; margin-top:8px;" placeholder='[{"kind":"ticket", ...}]'></textarea>
+      <button class="btn-sm" style="width:100%; padding:9px; margin-top:6px;" onclick="importFromPaste()">붙여넣은 답변으로 미리보기</button>
+    </details>
+    <div id="impPreview"></div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal('importModal')">닫기</button>
     </div>
   </div>
 </div>
@@ -1160,8 +1198,8 @@
   }
 
   function checkIsDomestic(destStr) {
-    if (!destStr) return false;
-    return KOREA_KEYWORDS.some(k => destStr.includes(k));
+    const tokens = str(destStr).split(/[\s,·\/()→\-+&~]+/).filter(Boolean);
+    return tokens.some(t => KOREA_KEYWORDS.some(k => t.startsWith(k)));
   }
 
   function guessCurrency(destStr, fallback = 'USD') {
@@ -2230,7 +2268,10 @@
     el.innerHTML = trip.bookings.map(bk => {
       const isHotel = bk.type === '숙소';
       const icon = isHotel ? '🏨' : (bk.type === '식당예약' ? '🍽️' : '🎟️');
-      const placeMaps = buildPlaceMapLinks(trip.stops.length > 1 ? '' : trip.destination, bk.location || bk.title, trip.isDomestic || checkIsDomestic(bk.location));
+      /* 지도 종류는 주소 글자가 아니라 여행(도시)의 국내/해외 설정을 따름 */
+      const bkStop = trip.stops.find(st => st.city && `${bk.location} ${bk.title}`.includes(st.city));
+      const bkCity = bkStop ? bkStop.city : (trip.stops.length > 1 ? '' : trip.destination);
+      const placeMaps = buildPlaceMapLinks(bkCity, bk.location || bk.title, bkStop ? bkStop.isDomestic : trip.isDomestic);
       const url = safeUrl(bk.url);
 
       return `
@@ -2238,6 +2279,7 @@
           <div class="ticket-top">
             <span class="badge ${isHotel ? 'purple' : 'green'}">${icon} ${escapeHtml(bk.type)} ${bk.date ? '· ' + escapeHtml(bk.date) : ''}</span>
             <div class="ctrl-btns">
+              <button class="ctrl-btn" onclick="duplicateBooking('${bk.id}')">복제</button>
               <button class="ctrl-btn" onclick="startEdit('booking', '${bk.id}')">수정</button>
               <button class="ctrl-btn" style="color:var(--danger);" onclick="deleteRecord('booking', '${bk.id}', '예약 정보')">삭제</button>
             </div>
@@ -2295,6 +2337,7 @@
           <div class="ticket-top">
             <span class="badge">${icon} ${escapeHtml(tk.type)} ${tk.number ? '· ' + escapeHtml(tk.number) : ''}</span>
             <div class="ctrl-btns">
+              <button class="ctrl-btn" onclick="prefillReturnTicket('${tk.id}')">↩ 왕복편</button>
               <button class="ctrl-btn" onclick="startEdit('ticket', '${tk.id}')">수정</button>
               <button class="ctrl-btn" style="color:var(--danger);" onclick="deleteRecord('ticket', '${tk.id}', '티켓')">삭제</button>
             </div>
@@ -2559,7 +2602,7 @@
   async function callGeminiOnce(model, promptObj, useSearchGrounding, maxTokens = 8192) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
     const payload = {
-      contents: [{ parts: [{ text: `${promptObj.system}\n\n${promptObj.user}` }] }],
+      contents: [{ parts: [{ text: `${promptObj.system}\n\n${promptObj.user}` }, ...(promptObj.extraParts || [])] }],
       /* 사고(thinking) 토큰도 출력 한도에 포함되므로 넉넉히 잡아 JSON이 중간에 잘리지 않게 함 */
       generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens }
     };
@@ -2627,14 +2670,14 @@
   }
 
   /* 검색 기반 → JSON 모드 → 상위 모델 순으로 시도. 응답이 깨졌거나 transform이 거부하면 다음 단계로 넘어감 */
-  async function geminiJsonArray(promptObj, transform, maxTokens) {
+  async function geminiJsonArray(promptObj, transform, maxTokens, useGrounding = true) {
     const attempts = [
       { model: 'gemini-3.5-flash-lite', grounded: true },
       { model: 'gemini-3.5-flash-lite', grounded: false },
       { model: 'gemini-3.8-flash', grounded: false }
     ];
     let lastErr = new Error('AI 응답을 받지 못했습니다.');
-    for (const a of attempts) {
+    for (const a of attempts.filter(x => useGrounding || !x.grounded)) {
       try {
         const data = await callGeminiOnce(a.model, promptObj, a.grounded, maxTokens);
         const cand = data && data.candidates && data.candidates[0];
@@ -3191,6 +3234,254 @@ ${dayLines}
     closeModal('planModal');
     render();
     showToast(`AI 일정 ${d.aiCount}곳을 적용했습니다.`, { undo: true });
+  }
+
+  /* ==================== 예약 정보 자동 입력 (메일·문자·스크린샷 → 숙소/바우처/티켓) ==================== */
+  const TICKET_TYPES = ['비행기', '기차', '버스'];
+  const BOOKING_TYPES = ['숙소', '입장권/티켓', '투어/액티비티', '통신/픽업', '식당예약'];
+  const IMPORT_MAX_BYTES = 12 * 1024 * 1024;
+  let importFile = null;    // { name, mime, b64 }
+  let importDraft = null;   // [{ kind, rec, dup }]
+
+  function openImportModal() {
+    document.getElementById('impText').value = '';
+    document.getElementById('impPaste').value = '';
+    document.getElementById('impStatus').textContent = '';
+    document.getElementById('impPreview').innerHTML = '';
+    document.getElementById('impRunBtn').textContent = settings.geminiApiKey
+      ? '✨ AI로 자동 정리하기'
+      : '📋 AI용 프롬프트 복사 (API 키 없음)';
+    clearImportFile();
+    importDraft = null;
+    document.getElementById('importModal').classList.add('open');
+  }
+
+  function clearImportFile() {
+    importFile = null;
+    document.getElementById('impFile').value = '';
+    document.getElementById('impFileName').textContent = '';
+    document.getElementById('impFileClear').style.display = 'none';
+  }
+
+  function onImportFileChange(inputEl) {
+    const file = inputEl.files && inputEl.files[0];
+    if (!file) return;
+    if (!/^image\//.test(file.type) && file.type !== 'application/pdf') {
+      clearImportFile();
+      showToast('이미지(스크린샷)나 PDF 파일만 넣을 수 있습니다.');
+      return;
+    }
+    if (file.size > IMPORT_MAX_BYTES) {
+      clearImportFile();
+      showToast('파일이 너무 큽니다 (12MB 이하). 해당 부분만 캡처해서 넣어 주세요.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      importFile = { name: file.name, mime: file.type, b64: str(reader.result).split(',')[1] || '' };
+      document.getElementById('impFileName').textContent = `📎 ${file.name}`;
+      document.getElementById('impFileClear').style.display = '';
+    };
+    reader.onerror = () => {
+      clearImportFile();
+      showToast('파일을 읽지 못했습니다.');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function buildImportPrompt(text) {
+    const trip = getCurrentTrip();
+    const system = `당신은 여행 예약 확인서(메일·문자·바우처·e티켓)에서 정보를 뽑아 정리하는 도우미입니다.
+[규칙]
+1. 문서에 실제로 적힌 내용만 옮깁니다. 없는 항목은 빈 문자열("")로 두고 절대 추측하지 않습니다.
+2. 교통편은 구간마다 1건씩 만듭니다 (왕복이면 2건, 경유편이면 구간별로).
+3. 날짜·시각은 현지 시각 그대로 "MM/DD HH:MM" 형식으로 적습니다 (예: "12/16 09:10").
+4. 공항·역은 "도시 (코드)" 또는 "도시 역이름"처럼 사람이 알아보기 쉽게 적습니다.
+5. 카드번호, 여권번호, 주민번호, 전화번호, 이메일 같은 개인정보는 어디에도 넣지 않습니다.
+6. memo에는 수하물, 조식, 인원, 취소 규정 등 현장에서 필요한 핵심만 40자 이내로 적습니다.
+반드시 순수 JSON 배열만 출력하세요 (설명 문장 금지). 항목 형식은 두 가지입니다:
+교통편: {"kind":"ticket","type":"비행기 또는 기차 또는 버스","number":"편명/열차번호","from":"출발지","to":"도착지","depTime":"출발 일시","arrTime":"도착 일시","resCode":"예약번호(PNR)","seat":"좌석 또는 터미널","memo":""}
+숙소·바우처: {"kind":"booking","type":"숙소 또는 입장권/티켓 또는 투어/액티비티 또는 통신/픽업 또는 식당예약","date":"이용일 또는 12/16~12/18 (2박)","title":"숙소명 또는 상품명","code":"예약번호/바우처 코드","subInfo":"체크인 15:00 / 체크아웃 11:00 또는 이용 시간·인원","location":"주소 또는 집결지","url":"바우처 링크(https://...)","memo":""}`;
+    const user = `참고: 여행 "${trip.title}" (${tripRouteLabel(trip)}${trip.startDate ? ', ' + trip.startDate + ' 출발' : ''})
+아래 ${text ? '내용' : '첨부 파일'}에서 교통편과 숙소·바우처 예약을 모두 찾아 JSON 배열로 출력하세요.${text ? '\n\n--- 예약 내용 ---\n' + text : ''}`;
+    return { system, user };
+  }
+
+  /* AI 응답을 앱의 티켓/예약 형식으로 정리하고, 이미 저장된 것과 겹치는지 표시 */
+  function normalizeImported(arr) {
+    const trip = getCurrentTrip();
+    const f = v => str(v).trim();
+    const out = [];
+    arr.forEach(r => {
+      if (!r || typeof r !== 'object') return;
+      const isTicket = r.kind === 'ticket' || (r.kind !== 'booking' && f(r.from) && f(r.to));
+      if (isTicket) {
+        if (!f(r.from) || !f(r.to)) return;
+        const rec = {
+          type: TICKET_TYPES.includes(r.type) ? r.type : (/기차|열차|KTX|SRT|신칸센|rail|train/i.test(f(r.type) + f(r.number)) ? '기차' : (/버스|bus/i.test(f(r.type)) ? '버스' : '비행기')),
+          number: f(r.number), from: f(r.from), to: f(r.to), depTime: f(r.depTime), arrTime: f(r.arrTime),
+          resCode: f(r.resCode), seat: f(r.seat), memo: f(r.memo)
+        };
+        const dup = trip.tickets.some(t => t.from === rec.from && t.to === rec.to && t.depTime === rec.depTime)
+          || (!!rec.number && !!rec.resCode && trip.tickets.some(t => t.number === rec.number && t.resCode === rec.resCode));
+        out.push({ kind: 'ticket', rec, dup });
+      } else {
+        if (!f(r.title)) return;
+        const rec = {
+          type: BOOKING_TYPES.includes(r.type) ? r.type : (/체크인|check-?in|호텔|hotel|숙박/i.test(f(r.type) + f(r.title) + f(r.subInfo)) ? '숙소' : '입장권/티켓'),
+          date: f(r.date), title: f(r.title), code: f(r.code), subInfo: f(r.subInfo),
+          location: f(r.location), url: safeUrl(r.url), memo: f(r.memo)
+        };
+        const dup = trip.bookings.some(b => b.title === rec.title && b.date === rec.date)
+          || (!!rec.code && trip.bookings.some(b => b.code === rec.code));
+        out.push({ kind: 'booking', rec, dup });
+      }
+    });
+    if (out.length === 0) throw new Error('예약 정보를 찾지 못했습니다. 예약번호·날짜가 보이는 부분을 넣어 주세요.');
+    return out;
+  }
+
+  function renderImportPreview() {
+    const el = document.getElementById('impPreview');
+    if (!importDraft) {
+      el.innerHTML = '';
+      return;
+    }
+    const rows = importDraft.map((d, i) => {
+      const r = d.rec;
+      let icon, main, sub;
+      if (d.kind === 'ticket') {
+        icon = r.type === '비행기' ? '✈️' : (r.type === '기차' ? '🚄' : '🚌');
+        main = `${r.number ? r.number + ' · ' : ''}${r.from} → ${r.to}`;
+        sub = [[r.depTime, r.arrTime].filter(Boolean).join(' → '), r.resCode ? '예약 ' + r.resCode : '', r.seat, r.memo].filter(Boolean).join(' · ');
+      } else {
+        icon = r.type === '숙소' ? '🏨' : (r.type === '식당예약' ? '🍽️' : '🎟️');
+        main = r.title;
+        sub = [r.type, r.date, r.code ? '예약 ' + r.code : '', r.subInfo, r.location, r.memo].filter(Boolean).join(' · ');
+      }
+      return `
+        <label class="imp-row">
+          <input type="checkbox" class="imp-check" data-idx="${i}" ${d.dup ? '' : 'checked'} />
+          <div>
+            <div class="plan-place">${icon} ${escapeHtml(main)} ${d.dup ? '<span class="badge warn">이미 저장됨</span>' : ''}</div>
+            <div class="hint" style="margin-top:2px;">${escapeHtml(sub)}</div>
+          </div>
+        </label>`;
+    }).join('');
+    el.innerHTML = `
+      <div class="divider-top">
+        <div class="section-title" style="margin-bottom:6px;">찾은 예약 ${importDraft.length}건</div>
+        ${rows}
+        <div class="hint">저장 전에 예약번호와 날짜·시각을 원본과 한 번 대조해 주세요. 저장 후 각 카드의 [수정]으로 고칠 수 있습니다.</div>
+        <button class="btn-sm primary" style="width:100%; padding:10px; margin-top:8px;" onclick="applyImport()">✔ 선택한 항목 저장하기</button>
+      </div>`;
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  async function runImport() {
+    const text = document.getElementById('impText').value.trim();
+    const statusEl = document.getElementById('impStatus');
+    if (!text && !importFile) {
+      showToast('예약 내용을 붙여넣거나 스크린샷·PDF를 선택해 주세요.');
+      return;
+    }
+    const promptObj = buildImportPrompt(text);
+
+    if (!settings.geminiApiKey) {
+      const ok = await copyToClipboard(`${promptObj.system}\n\n${promptObj.user}`);
+      document.getElementById('impPasteBox').open = true;
+      statusEl.textContent = ok
+        ? `프롬프트를 복사했습니다. ChatGPT·Gemini 등에 붙여넣고${importFile ? ' 스크린샷·PDF도 함께 첨부한 뒤' : ''}, 받은 JSON 답변을 아래 칸에 붙여넣으세요. ([⚙️ 설정]에 Gemini 키를 넣으면 이 과정이 자동입니다.)`
+        : '자동 복사가 막혀 있습니다. 브라우저의 클립보드 권한을 확인해 주세요.';
+      return;
+    }
+
+    if (importFile) promptObj.extraParts = [{ inline_data: { mime_type: importFile.mime, data: importFile.b64 } }];
+    const btn = document.getElementById('impRunBtn');
+    btn.disabled = true;
+    btn.textContent = '예약 정보를 읽는 중...';
+    statusEl.textContent = '';
+    importDraft = null;
+    renderImportPreview();
+    try {
+      const { result } = await geminiJsonArray(promptObj, normalizeImported, 8192, false);
+      importDraft = result;
+      renderImportPreview();
+    } catch (err) {
+      statusEl.textContent = `읽기 오류: ${err.message}`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '✨ AI로 자동 정리하기';
+    }
+  }
+
+  function importFromPaste() {
+    try {
+      importDraft = normalizeImported(extractJsonArray(document.getElementById('impPaste').value));
+      document.getElementById('impStatus').textContent = '';
+      renderImportPreview();
+    } catch (err) {
+      document.getElementById('impStatus').textContent = `붙여넣은 답변을 읽지 못했습니다: ${err.message}`;
+    }
+  }
+
+  function applyImport() {
+    if (!importDraft) return;
+    const picked = [...document.querySelectorAll('#impPreview .imp-check:checked')].map(c => importDraft[Number(c.dataset.idx)]).filter(Boolean);
+    if (picked.length === 0) {
+      showToast('저장할 항목을 선택해 주세요.');
+      return;
+    }
+    const trip = getCurrentTrip();
+    snapshotForUndo();
+    let tickets = 0;
+    let bookings = 0;
+    picked.forEach(d => {
+      if (d.kind === 'ticket') {
+        trip.tickets.push({ id: newId('tk'), ...d.rec });
+        tickets++;
+      } else {
+        trip.bookings.push({ id: newId('bk'), ...d.rec });
+        bookings++;
+      }
+    });
+    importDraft = null;
+    saveState();
+    closeModal('importModal');
+    /* 저장된 쪽 탭을 보여 줌 */
+    const current = state.activeMainTab;
+    if (!((current === 'tickets' && tickets) || (current === 'bookings' && bookings))) {
+      state.activeMainTab = tickets ? 'tickets' : 'bookings';
+      saveState();
+      applyMainTab();
+    }
+    render();
+    showToast(`티켓 ${tickets}건 · 숙소/바우처 ${bookings}건을 저장했습니다.`, { undo: true });
+  }
+
+  /* 저장된 카드를 바탕으로 입력 폼을 미리 채움 (새 항목으로 추가됨) */
+  function prefillForm(kind, values, msg) {
+    const cfg = FORMS[kind];
+    resetForm(kind);
+    Object.entries(cfg.ids).forEach(([key, elId]) => {
+      if (values[key] !== undefined) document.getElementById(elId).value = values[key];
+    });
+    document.getElementById(cfg.btn).scrollIntoView({ block: 'center', behavior: 'smooth' });
+    showToast(msg);
+  }
+
+  function prefillReturnTicket(id) {
+    const tk = getCurrentTrip().tickets.find(x => x.id === id);
+    if (!tk) return;
+    prefillForm('ticket', { type: tk.type, from: tk.to, to: tk.from, resCode: tk.resCode },
+      '돌아오는 편을 채웠습니다. 편명과 시간만 입력하세요.');
+  }
+
+  function duplicateBooking(id) {
+    const bk = getCurrentTrip().bookings.find(x => x.id === id);
+    if (!bk) return;
+    prefillForm('booking', { type: bk.type, title: bk.title, subInfo: bk.subInfo, location: bk.location, memo: bk.memo },
+      '같은 내용을 채웠습니다. 날짜와 예약번호만 바꿔 저장하세요.');
   }
 
   /* ==================== 여행 전환 · 생성 · 수정 ==================== */
