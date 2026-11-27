@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="여행일정" />
-  <title>스마트 여행 일정·티켓·경비 플래너</title>
+  <title>스마트 여행 일정·예약·경비 플래너</title>
   <style>
     :root {
       --bg: #f4f6f9;
@@ -19,6 +19,7 @@
       --danger: #ef4444;
       --success: #10b981;
       --amber: #f59e0b;
+      --purple: #7c3aed;
       --radius: 14px;
     }
 
@@ -34,7 +35,7 @@
     header {
       background: var(--card);
       border-bottom: 1px solid var(--border);
-      padding: 12px 16px 0;
+      padding: 12px 14px 0;
       position: sticky;
       top: 0;
       z-index: 20;
@@ -47,7 +48,7 @@
       margin-bottom: 10px;
     }
     .app-title {
-      font-size: 1.08rem;
+      font-size: 1.06rem;
       font-weight: 700;
       display: flex;
       align-items: center;
@@ -63,7 +64,7 @@
       color: var(--text);
       padding: 6px 9px;
       border-radius: 8px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 600;
       cursor: pointer;
     }
@@ -76,7 +77,7 @@
     .trip-selector-row {
       display: flex;
       gap: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     select, input, textarea {
       font-family: inherit;
@@ -96,21 +97,22 @@
       font-weight: 600;
     }
 
-    /* Main Top Navigation Tabs */
+    /* Main 4 Navigation Tabs */
     .main-nav {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 4px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
     }
     .nav-tab {
       border: none;
       background: transparent;
-      padding: 10px 4px;
-      font-size: 0.88rem;
+      padding: 10px 2px;
+      font-size: 0.82rem;
       font-weight: 700;
       color: var(--muted);
       border-bottom: 3px solid transparent;
       cursor: pointer;
+      white-space: nowrap;
     }
     .nav-tab.active {
       color: var(--primary);
@@ -189,6 +191,8 @@
     }
     .badge.food { background: #fef3c7; color: #b45309; }
     .badge.dur { background: #f1f5f9; color: #475569; }
+    .badge.purple { background: #f3e8ff; color: #6d28d9; }
+    .badge.green { background: #d1fae5; color: #065f46; }
     .rec-desc {
       font-size: 0.84rem;
       color: var(--muted);
@@ -238,11 +242,11 @@
       border-color: var(--primary);
     }
 
-    /* Timeline Items */
+    /* Timeline & Route Connector */
     .timeline-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 0;
     }
     .item-card {
       border: 1px solid var(--border);
@@ -297,7 +301,7 @@
       gap: 6px;
       flex-wrap: wrap;
     }
-    .map-links { display: flex; gap: 5px; }
+    .map-links { display: flex; gap: 5px; flex-wrap: wrap; }
     .map-btn {
       font-size: 0.75rem;
       padding: 4px 8px;
@@ -307,6 +311,7 @@
       color: var(--text);
       text-decoration: none;
       font-weight: 600;
+      cursor: pointer;
     }
     .ctrl-btns { display: flex; gap: 4px; }
     .ctrl-btn {
@@ -317,6 +322,65 @@
       font-size: 0.76rem;
       cursor: pointer;
       color: var(--muted);
+    }
+
+    /* Transit Connector between places */
+    .transit-connector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px 7px 22px;
+      position: relative;
+    }
+    .transit-connector::before {
+      content: "";
+      position: absolute;
+      left: 30px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #cbd5e1;
+    }
+    .transit-pill {
+      position: relative;
+      z-index: 1;
+      margin-left: 16px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 0.76rem;
+      color: var(--text);
+      width: 100%;
+      justify-content: space-between;
+    }
+    .transit-info-btn {
+      border: none;
+      background: transparent;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      padding: 0;
+      text-align: left;
+    }
+    .route-links {
+      display: flex;
+      gap: 4px;
+    }
+    .route-btn {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      text-decoration: none;
+      font-weight: 600;
     }
 
     /* Form Grid */
@@ -333,7 +397,7 @@
       border-top: 1px dashed var(--border);
     }
 
-    /* Ticket Cards */
+    /* Ticket & Voucher Cards */
     .ticket-card {
       border: 1px solid #cbd5e1;
       border-left: 5px solid var(--primary);
@@ -344,11 +408,15 @@
     }
     .ticket-card.train { border-left-color: #10b981; }
     .ticket-card.bus { border-left-color: #f59e0b; }
+    .ticket-card.hotel { border-left-color: #7c3aed; }
+    .ticket-card.voucher { border-left-color: #ec4899; }
+
     .ticket-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 8px;
+      gap: 6px;
     }
     .ticket-route {
       font-size: 1.02rem;
@@ -365,7 +433,18 @@
       padding: 9px;
       border-radius: 8px;
     }
-    .ticket-meta span { color: var(--muted); font-size: 0.76rem; display: block; }
+    .ticket-meta span { color: var(--muted); font-size: 0.75rem; display: block; }
+    .copy-code-btn {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: 4px;
+      color: var(--primary);
+    }
 
     /* Expense Summary & List */
     .exp-summary-box {
@@ -420,7 +499,7 @@
       color: var(--muted);
       margin-bottom: 4px;
     }
-    .field input, .field select { width: 100%; }
+    .field input, .field select, .field textarea { width: 100%; }
     .modal-actions {
       display: flex;
       justify-content: flex-end;
@@ -469,15 +548,16 @@
     <button class="btn-sm primary" onclick="openNewTripModal()">+ 새 여행</button>
   </div>
   <nav class="main-nav">
-    <button class="nav-tab active" data-tab="itinerary" onclick="switchMainTab('itinerary')">📅 일정·맛집</button>
+    <button class="nav-tab active" data-tab="itinerary" onclick="switchMainTab('itinerary')">📅 일정·경로</button>
+    <button class="nav-tab" data-tab="bookings" onclick="switchMainTab('bookings')">🏨 숙소·바우처</button>
     <button class="nav-tab" data-tab="tickets" onclick="switchMainTab('tickets')">🎫 교통·티켓</button>
-    <button class="nav-tab" data-tab="expenses" onclick="switchMainTab('expenses')">💰 여행 경비</button>
+    <button class="nav-tab" data-tab="expenses" onclick="switchMainTab('expenses')">💰 경비</button>
   </nav>
 </header>
 
 <div class="container">
 
-  <!-- ==================== 1. 일정 및 맛집 탭 ==================== -->
+  <!-- ==================== 1. 일정·맛집·이동경로 탭 ==================== -->
   <section id="tab-itinerary" class="view-section active">
     <!-- AI 명소 & 맛집 추천 카드 -->
     <div class="card">
@@ -503,7 +583,7 @@
       </div>
     </div>
 
-    <!-- 일자별 타임라인 카드 -->
+    <!-- 일자별 타임라인 & 이동 경로 카드 -->
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div class="section-title" id="currentTripMeta">일정 타임라인</div>
@@ -513,7 +593,7 @@
       <div class="day-tabs" id="dayTabs"></div>
       <div class="timeline-list" id="timelineList"></div>
 
-      <!-- 수동 일정/맛집 추가 폼 -->
+      <!-- 수동 일정 추가 폼 -->
       <div class="form-grid divider-top">
         <input type="time" id="addTime" value="10:00" />
         <input type="text" id="addPlace" placeholder="장소명 또는 식당명 입력" />
@@ -524,14 +604,40 @@
           <option value="쇼핑">🛍️ 쇼핑</option>
           <option value="숙소/이동">🏨 숙소/이동</option>
         </select>
-        <input type="text" id="addDuration" placeholder="예상 소요시간 (예: 1시간 30분)" />
+        <input type="text" id="addDuration" placeholder="체류 소요시간 (예: 1시간 30분)" />
         <input type="text" id="addMemo" class="full" placeholder="메모 (추천 메뉴, 예약번호, 입장 팁 등)" />
         <button class="btn-sm primary full" style="padding:10px;" onclick="addManualItem()">+ 현재 날짜에 일정 추가</button>
       </div>
     </div>
   </section>
 
-  <!-- ==================== 2. 교통·티켓 보관함 탭 ==================== -->
+  <!-- ==================== 2. 숙소 · 바우처 · 예약 보관함 탭 ==================== -->
+  <section id="tab-bookings" class="view-section">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:12px;">🏨 숙소 · 투어 · 입장권 바우처 보관함</div>
+      <div id="bookingList"></div>
+
+      <div class="form-grid divider-top">
+        <select id="bkType">
+          <option value="숙소">🏨 숙소 (호텔/리조트)</option>
+          <option value="입장권/티켓">🎟️ 입장권 / 패스 바우처</option>
+          <option value="투어/액티비티">🚌 투어 / 유람선 / 공연</option>
+          <option value="통신/픽업">📶 유심·와이파이·픽업</option>
+          <option value="식당예약">🍽️ 식당 예약</option>
+        </select>
+        <input type="text" id="bkDate" placeholder="이용일/체크인 (예: 12/16~12/18)" />
+        <input type="text" id="bkTitle" class="full" placeholder="숙소명 또는 바우처 상품명 (예: 상하이 와이탄 호텔)" />
+        <input type="text" id="bkCode" placeholder="예약번호 / 바우처 코드" />
+        <input type="text" id="bkSubInfo" placeholder="체크아웃 또는 이용시간/인원" />
+        <input type="text" id="bkLocation" class="full" placeholder="주소 또는 집결지 (지도 검색용)" />
+        <input type="url" id="bkUrl" class="full" placeholder="바우처 링크 URL (선택, https://...)" />
+        <input type="text" id="bkMemo" class="full" placeholder="메모 (조식 포함 여부, PIN 번호, 취소 규정 등)" />
+        <button class="btn-sm primary full" style="padding:10px;" onclick="addBooking()">+ 숙소 · 바우처 저장하기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 3. 교통·티켓 보관함 탭 ==================== -->
   <section id="tab-tickets" class="view-section">
     <div class="card">
       <div class="section-title" style="margin-bottom:12px;">🎫 저장된 이동 티켓 (비행기 · 기차 · 버스)</div>
@@ -556,7 +662,7 @@
     </div>
   </section>
 
-  <!-- ==================== 3. 여행 경비 & 정산 탭 ==================== -->
+  <!-- ==================== 4. 여행 경비 & 정산 탭 ==================== -->
   <section id="tab-expenses" class="view-section">
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px; flex-wrap:wrap;">
@@ -621,13 +727,13 @@
 
 </div>
 
-<!-- 일정 수정 모달 -->
+<!-- 일정 및 다음 이동 구간 수정 모달 -->
 <div class="modal-backdrop" id="editItemModal">
   <div class="modal">
-    <h3>일정 수정</h3>
+    <h3>일정 및 다음 이동 정보 수정</h3>
     <input type="hidden" id="editItemId" />
     <div class="field">
-      <label>시간</label>
+      <label>방문 시각</label>
       <input type="time" id="editTime" />
     </div>
     <div class="field">
@@ -645,16 +751,38 @@
       </select>
     </div>
     <div class="field">
-      <label>예상 소요시간</label>
+      <label>장소 체류 예상 소요시간</label>
       <input type="text" id="editDuration" placeholder="예: 1시간 30분" />
     </div>
     <div class="field">
+      <label>다음 장소까지 이동 수단 & 소요시간</label>
+      <input type="text" id="editNextTransit" placeholder="예: 지하철 2호선 20분 / 택시 15분 / 도보 10분" />
+    </div>
+    <div class="field">
       <label>메모 (추천 메뉴, 팁 등)</label>
-      <textarea id="editMemo" rows="3" style="width:100%;"></textarea>
+      <textarea id="editMemo" rows="3"></textarea>
     </div>
     <div class="modal-actions">
       <button class="btn-sm" onclick="closeModal('editItemModal')">취소</button>
       <button class="btn-sm primary" onclick="saveEditedItem()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 이동 구간 빠른 편집 모달 -->
+<div class="modal-backdrop" id="transitModal">
+  <div class="modal">
+    <h3>🚶 다음 방문지까지 이동 시간 기록</h3>
+    <input type="hidden" id="transitItemId" />
+    <div id="transitRouteLabel" style="font-size:0.88rem; font-weight:700; color:var(--primary); margin-bottom:10px;"></div>
+    <div class="field">
+      <label>이동 수단 및 예상 이동 시간</label>
+      <input type="text" id="transitInput" placeholder="예: 지하철 25분, 택시 15분, 도보 12분" />
+      <div class="hint">아래 경로 버튼을 눌러 지도에서 실제 소요시간을 확인한 뒤 적어두시면 편리합니다.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal('transitModal')">취소</button>
+      <button class="btn-sm primary" onclick="saveTransitInfo()">저장</button>
     </div>
   </div>
 </div>
@@ -668,7 +796,7 @@
       <input type="text" id="newTitle" placeholder="예: 2026.12 상하이 2박3일" />
     </div>
     <div class="field">
-      <label>주요 여행지 (추천 및 지도 검색용)</label>
+      <label>주요 여행지 (추천 및 지도·경로 검색용)</label>
       <input type="text" id="newDest" placeholder="예: 상하이" />
     </div>
     <div class="field">
@@ -719,7 +847,7 @@
     <div class="field">
       <label>Gist ID (비워두고 저장 시 새 Gist 자동 생성)</label>
       <input type="text" id="gistIdInput" placeholder="예: a1b2c3d4e5f6..." />
-      <div class="hint">일정, 맛집, 티켓, 경비 데이터가 모두 함께 동기화됩니다.</div>
+      <div class="hint">일정, 이동시간, 숙소·바우처, 티켓, 경비가 모두 동기화됩니다.</div>
     </div>
     <div style="display:flex; gap:8px; margin-top:12px;">
       <button class="btn-sm primary" style="flex:1; padding:9px;" onclick="syncToGist('upload')">⬆️ Gist에 저장</button>
@@ -795,9 +923,12 @@
           fxCurrency: 'CNY',
           fxRate: 195,
           items: [
-            { id: 'i1', day: 1, time: '14:30', place: '예원 (豫園) & 남상만두점', category: '관광', duration: '2시간', memo: '정원 관람 후 성게알 샤오롱바오 시식', done: false },
-            { id: 'i2', day: 1, time: '19:00', place: '와이탄 (外灘) 야경 산책', category: '관광', duration: '1시간 30분', memo: '동방명주 야경 감상 및 강변 산책', done: false },
-            { id: 'i3', day: 2, time: '12:00', place: '하이디라오 (인민광장점)', category: '맛집', duration: '1시간 30분', memo: '토마토탕 + 마라탕 훠궈 추천', done: false }
+            { id: 'i1', day: 1, time: '14:30', place: '예원 (豫園) & 남상만두점', category: '관광', duration: '2시간', nextTransit: '택시 12분 / 도보 25분', memo: '정원 관람 후 성게알 샤오롱바오 시식', done: false },
+            { id: 'i2', day: 1, time: '18:30', place: '와이탄 (外灘) 야경 산책', category: '관광', duration: '1시간 30분', nextTransit: '', memo: '동방명주 야경 감상 및 강변 산책', done: false },
+            { id: 'i3', day: 2, time: '12:00', place: '하이디라오 (인민광장점)', category: '맛집', duration: '1시간 30분', nextTransit: '', memo: '토마토탕 + 마라탕 훠궈 추천', done: false }
+          ],
+          bookings: [
+            { id: 'bk1', type: '숙소', date: '12/16 ~ 12/18 (2박)', title: '상하이 와이탄 중심부 호텔 (2객실)', code: 'RES-8849201', subInfo: '체크인 15:00 / 체크아웃 12:00', location: '상하이 황푸구 난징동루 인근', url: '', memo: '조식 4인 포함, 여권 지참 체크인' }
           ],
           tickets: [
             { id: 'tk1', type: '비행기', number: 'OZ361', from: '인천 (ICN)', to: '상하이 푸동 (PVG)', depTime: '12/16 09:10', arrTime: '12/16 10:25', resCode: 'ABC123', seat: '제1터미널', memo: '출발 2시간 전 공항 도착' }
@@ -819,6 +950,7 @@
     const trip = state.trips.find(t => t.id === state.currentTripId) || state.trips[0];
     if (trip) {
       if (!Array.isArray(trip.items)) trip.items = [];
+      if (!Array.isArray(trip.bookings)) trip.bookings = [];
       if (!Array.isArray(trip.tickets)) trip.tickets = [];
       if (!Array.isArray(trip.expenses)) trip.expenses = [];
       if (!trip.splitCount) trip.splitCount = 4;
@@ -844,7 +976,6 @@
     if (!trip) return;
     state.currentTripId = trip.id;
 
-    // Trip Dropdown
     const sel = document.getElementById('tripSelect');
     sel.innerHTML = state.trips.map(t =>
       `<option value="${t.id}" ${t.id === trip.id ? 'selected' : ''}>${escapeHtml(t.title)}</option>`
@@ -856,11 +987,12 @@
     }
 
     renderItinerary(trip);
+    renderBookings(trip);
     renderTickets(trip);
     renderExpenses(trip);
   }
 
-  /* ==================== 1. 일정·맛집 렌더링 ==================== */
+  /* ==================== 1. 일정·맛집·이동경로 렌더링 ==================== */
   function renderItinerary(trip) {
     if (state.selectedDay > trip.daysCount) state.selectedDay = 1;
     const tabsEl = document.getElementById('dayTabs');
@@ -886,6 +1018,32 @@
       const gMap = `https://www.google.com/maps/search/?api=1&query=${q}`;
       const nMap = `https://map.naver.com/p/search/${q}`;
       const isFood = item.category === '맛집' || item.category === '카페';
+
+      // 다음 장소가 있을 경우 이동 구간 & 길찾기 경로 링크 생성
+      let transitHtml = '';
+      if (idx < dayItems.length - 1) {
+        const nextItem = dayItems[idx + 1];
+        const originQ = encodeURIComponent(`${trip.destination} ${item.place}`);
+        const destQ = encodeURIComponent(`${trip.destination} ${nextItem.place}`);
+        const gDirUrl = `https://www.google.com/maps/dir/?api=1&origin=${originQ}&destination=${destQ}&travelmode=transit`;
+        const nDirUrl = `https://map.naver.com/p/directions/-/-/-/transit?c=13.00,0,0,0,dh`;
+        const transitLabel = item.nextTransit ? `🚶 ${escapeHtml(item.nextTransit)}` : `+ 이동시간 기록`;
+
+        transitHtml = `
+          <div class="transit-connector">
+            <div class="transit-pill">
+              <button class="transit-info-btn" onclick="openTransitModal('${item.id}', '${escapeAttr(item.place)}', '${escapeAttr(nextItem.place)}')">
+                ${transitLabel}
+              </button>
+              <div class="route-links">
+                <a class="route-btn" href="${gDirUrl}" target="_blank" rel="noopener">🗺️ 구글 경로</a>
+                <a class="route-btn" href="https://map.naver.com/p/search/${destQ}" target="_blank" rel="noopener">🧭 다음장소 지도</a>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
       return `
         <div class="item-card ${item.done ? 'done' : ''}">
           <div class="item-row1">
@@ -909,6 +1067,7 @@
             </div>
           </div>
         </div>
+        ${transitHtml}
       `;
     }).join('');
   }
@@ -933,6 +1092,7 @@
       place,
       category,
       duration,
+      nextTransit: '',
       memo,
       done: false
     });
@@ -954,6 +1114,7 @@
     document.getElementById('editPlace').value = item.place || '';
     document.getElementById('editCategory').value = item.category || '관광';
     document.getElementById('editDuration').value = item.duration || '';
+    document.getElementById('editNextTransit').value = item.nextTransit || '';
     document.getElementById('editMemo').value = item.memo || '';
     document.getElementById('editItemModal').classList.add('open');
   }
@@ -972,11 +1133,34 @@
     item.place = place;
     item.category = document.getElementById('editCategory').value;
     item.duration = document.getElementById('editDuration').value.trim();
+    item.nextTransit = document.getElementById('editNextTransit').value.trim();
     item.memo = document.getElementById('editMemo').value.trim();
     saveState();
     closeModal('editItemModal');
     render();
     showToast('일정이 수정되었습니다.');
+  }
+
+  function openTransitModal(itemId, fromName, toName) {
+    const trip = getCurrentTrip();
+    const item = trip.items.find(x => x.id === itemId);
+    if (!item) return;
+    document.getElementById('transitItemId').value = item.id;
+    document.getElementById('transitRouteLabel').textContent = `${fromName} → ${toName}`;
+    document.getElementById('transitInput').value = item.nextTransit || '';
+    document.getElementById('transitModal').classList.add('open');
+  }
+
+  function saveTransitInfo() {
+    const trip = getCurrentTrip();
+    const id = document.getElementById('transitItemId').value;
+    const item = trip.items.find(x => x.id === id);
+    if (!item) return;
+    item.nextTransit = document.getElementById('transitInput').value.trim();
+    saveState();
+    closeModal('transitModal');
+    render();
+    showToast('이동 시간이 저장되었습니다.');
   }
 
   function toggleDone(itemId) {
@@ -1010,7 +1194,92 @@
     render();
   }
 
-  /* ==================== 2. 교통·티켓 렌더링 ==================== */
+  /* ==================== 2. 숙소 · 바우처 렌더링 ==================== */
+  function renderBookings(trip) {
+    const el = document.getElementById('bookingList');
+    if (trip.bookings.length === 0) {
+      el.innerHTML = `<div style="text-align:center; padding:20px; color:var(--muted); font-size:0.86rem;">
+        저장된 숙소 예약이나 입장권·투어 바우처가 없습니다.<br/>아래에서 예약 정보를 등록해 현장에서 바로 꺼내 보세요.
+      </div>`;
+      return;
+    }
+
+    el.innerHTML = trip.bookings.map(bk => {
+      const isHotel = bk.type === '숙소';
+      const icon = isHotel ? '🏨' : (bk.type === '식당예약' ? '🍽️' : '🎟️');
+      const cardCls = isHotel ? 'hotel' : 'voucher';
+      const badgeCls = isHotel ? 'purple' : 'green';
+      const mapQuery = encodeURIComponent(bk.location || `${trip.destination} ${bk.title}`);
+      const gMap = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+
+      return `
+        <div class="ticket-card ${cardCls}">
+          <div class="ticket-top">
+            <span class="badge ${badgeCls}">${icon} ${escapeHtml(bk.type)} ${bk.date ? '· ' + escapeHtml(bk.date) : ''}</span>
+            <button class="ctrl-btn" style="color:var(--danger);" onclick="deleteBooking('${bk.id}')">삭제</button>
+          </div>
+          <div class="ticket-route">${escapeHtml(bk.title)}</div>
+          <div class="ticket-meta">
+            <div>
+              <span>예약번호 / 바우처 코드</span>
+              <strong>${escapeHtml(bk.code || '-')}</strong>
+              ${bk.code ? `<button class="copy-code-btn" onclick="copyText('${escapeAttr(bk.code)}')">복사</button>` : ''}
+            </div>
+            <div><span>이용 시간 / 체크아웃</span>${escapeHtml(bk.subInfo || '-')}</div>
+          </div>
+          ${bk.location ? `<div class="hint" style="margin-top:6px;">📍 ${escapeHtml(bk.location)}</div>` : ''}
+          ${bk.memo ? `<div class="hint" style="margin-top:4px; color:var(--text);">📝 ${escapeHtml(bk.memo)}</div>` : ''}
+          <div style="display:flex; gap:6px; margin-top:9px; flex-wrap:wrap;">
+            <a class="map-btn" href="${gMap}" target="_blank" rel="noopener">📍 위치 지도 보기</a>
+            ${bk.url ? `<a class="map-btn" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;" href="${escapeHtml(bk.url)}" target="_blank" rel="noopener">🔗 바우처 링크 열기</a>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function addBooking() {
+    const trip = getCurrentTrip();
+    const type = document.getElementById('bkType').value;
+    const date = document.getElementById('bkDate').value.trim();
+    const title = document.getElementById('bkTitle').value.trim();
+    const code = document.getElementById('bkCode').value.trim();
+    const subInfo = document.getElementById('bkSubInfo').value.trim();
+    const location = document.getElementById('bkLocation').value.trim();
+    const url = document.getElementById('bkUrl').value.trim();
+    const memo = document.getElementById('bkMemo').value.trim();
+
+    if (!title) {
+      showToast('숙소명 또는 바우처 상품명을 입력해 주세요.');
+      return;
+    }
+
+    trip.bookings.push({
+      id: 'bk_' + Date.now(),
+      type, date, title, code, subInfo, location, url, memo
+    });
+
+    ['bkDate','bkTitle','bkCode','bkSubInfo','bkLocation','bkUrl','bkMemo'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    saveState();
+    render();
+    showToast('숙소 · 바우처 정보가 저장되었습니다.');
+  }
+
+  function deleteBooking(id) {
+    const trip = getCurrentTrip();
+    trip.bookings = trip.bookings.filter(b => b.id !== id);
+    saveState();
+    render();
+  }
+
+  async function copyText(str) {
+    await navigator.clipboard.writeText(str);
+    showToast(`복사됨: ${str}`);
+  }
+
+  /* ==================== 3. 교통·티켓 렌더링 ==================== */
   function renderTickets(trip) {
     const el = document.getElementById('ticketList');
     if (trip.tickets.length === 0) {
@@ -1033,7 +1302,11 @@
           <div class="ticket-meta">
             <div><span>출발 일시</span>${escapeHtml(tk.depTime || '-')}</div>
             <div><span>도착 일시</span>${escapeHtml(tk.arrTime || '-')}</div>
-            <div><span>예약번호 (PNR)</span><strong>${escapeHtml(tk.resCode || '-')}</strong></div>
+            <div>
+              <span>예약번호 (PNR)</span>
+              <strong>${escapeHtml(tk.resCode || '-')}</strong>
+              ${tk.resCode ? `<button class="copy-code-btn" onclick="copyText('${escapeAttr(tk.resCode)}')">복사</button>` : ''}
+            </div>
             <div><span>좌석 / 터미널</span>${escapeHtml(tk.seat || '-')}</div>
           </div>
           ${tk.memo ? `<div class="hint" style="margin-top:7px;">📝 ${escapeHtml(tk.memo)}</div>` : ''}
@@ -1079,7 +1352,7 @@
     render();
   }
 
-  /* ==================== 3. 여행 경비 렌더링 ==================== */
+  /* ==================== 4. 여행 경비 렌더링 ==================== */
   function renderExpenses(trip) {
     document.getElementById('splitCountInput').value = trip.splitCount || 4;
     document.getElementById('fxCurrency').value = trip.fxCurrency || 'CNY';
@@ -1103,7 +1376,6 @@
       } else if (ex.currency === trip.fxCurrency) {
         totalKrw += amt * (Number(trip.fxRate) || 1);
       } else {
-        // 기본 간이 환율 폴백
         const fallbackRates = { CNY: 195, JPY: 9.2, USD: 1380, EUR: 1480 };
         totalKrw += amt * (fallbackRates[ex.currency] || 1);
       }
@@ -1322,6 +1594,7 @@
       place: placeObj.name,
       category: placeObj.category || '관광',
       duration: placeObj.duration || '',
+      nextTransit: '',
       memo: placeObj.desc || '',
       done: false
     });
@@ -1373,6 +1646,7 @@
       fxCurrency: 'CNY',
       fxRate: 195,
       items: [],
+      bookings: [],
       tickets: [],
       expenses: []
     });
@@ -1405,6 +1679,14 @@
     const trip = getCurrentTrip();
     let lines = [`[✈️ ${trip.title} (${trip.destination})]`, ''];
 
+    if (trip.bookings.length > 0) {
+      lines.push('🏨 [숙소 · 바우처 예약]');
+      trip.bookings.forEach(bk => {
+        lines.push(`  • [${bk.type}] ${bk.title} (${bk.date || ''}) ${bk.code ? '예약번호:' + bk.code : ''}`);
+      });
+      lines.push('');
+    }
+
     if (trip.tickets.length > 0) {
       lines.push('🎫 [교통·티켓]');
       trip.tickets.forEach(tk => {
@@ -1419,16 +1701,19 @@
       if (items.length === 0) {
         lines.push('  - 일정 없음');
       } else {
-        items.forEach(it => {
-          const durStr = it.duration ? ` (${it.duration})` : '';
+        items.forEach((it, idx) => {
+          const durStr = it.duration ? ` (체류 ${it.duration})` : '';
           lines.push(`  • ${it.time} ${it.place} [${it.category}]${durStr}${it.memo ? ' - ' + it.memo : ''}`);
+          if (idx < items.length - 1 && it.nextTransit) {
+            lines.push(`     ↳ 이동: ${it.nextTransit}`);
+          }
         });
       }
       lines.push('');
     }
 
     await navigator.clipboard.writeText(lines.join('\n').trim());
-    showToast('티켓과 전체 일정이 클립보드에 복사되었습니다.');
+    showToast('예약·티켓과 전체 일정이 클립보드에 복사되었습니다.');
   }
 
   function openSettingsModal() {
@@ -1528,6 +1813,10 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+  }
+
+  function escapeAttr(str) {
+    return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
   }
 
   loadAll();
