@@ -318,6 +318,16 @@
       border-color: #cbd5e1;
       color: #0f172a;
     }
+    .map-btn.naver {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      color: #047857;
+    }
+    .map-btn.kakao {
+      background: #fefce8;
+      border-color: #fde047;
+      color: #854d0e;
+    }
     .ctrl-btns { display: flex; gap: 4px; }
     .ctrl-btn {
       border: 1px solid var(--border);
@@ -392,6 +402,16 @@
       background: #0f172a;
       color: #ffffff;
       border-color: #0f172a;
+    }
+    .route-btn.naver {
+      background: #03c75a;
+      color: #ffffff;
+      border-color: #03c75a;
+    }
+    .route-btn.kakao {
+      background: #fee500;
+      color: #191919;
+      border-color: #facc15;
     }
 
     /* Form Grid */
@@ -578,13 +598,13 @@
       </div>
       <div id="recommendBody">
         <div class="ai-form">
-          <input type="text" id="recCity" placeholder="여행지 (예: 상하이, 삿포로)" />
+          <input type="text" id="recCity" placeholder="여행지 (예: 상하이, 경주, 제주)" />
           <select id="recFocus">
             <option value="명소와 로컬 맛집 균형">🎯 명소 + 맛집 균형 추천</option>
             <option value="현지인 추천 필수 맛집과 카페">🍽️ 현지 맛집·디저트 집중</option>
             <option value="핵심 관광 명소와 야경 스팟">🏛️ 핵심 관광지·야경 집중</option>
           </select>
-          <input type="text" id="recStyle" class="full" placeholder="세부 조건 (예: 성인 4인, 이동 편한 곳, 샤오롱바오·훠궈 추천)" />
+          <input type="text" id="recStyle" class="full" placeholder="세부 조건 (예: 성인 4인, 이동 편한 곳, 대표 음식 추천)" />
           <button class="btn-sm primary full" id="recActionBtn" style="padding:10px;" onclick="handleRecommend()">
             추천 장소 불러오기
           </button>
@@ -596,9 +616,12 @@
 
     <!-- 일자별 타임라인 & 이동 경로 카드 -->
     <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:6px; flex-wrap:wrap;">
         <div class="section-title" id="currentTripMeta">일정 타임라인</div>
-        <button class="btn-sm" style="color:var(--danger);" onclick="deleteCurrentTrip()">여행 삭제</button>
+        <div style="display:flex; gap:5px;">
+          <button class="btn-sm" onclick="toggleDomesticMode()" id="regionBadgeBtn" title="클릭 시 국내/해외 지도 모드 전환">🌏 해외지도</button>
+          <button class="btn-sm" style="color:var(--danger);" onclick="deleteCurrentTrip()">여행 삭제</button>
+        </div>
       </div>
 
       <div class="day-tabs" id="dayTabs"></div>
@@ -789,7 +812,7 @@
     <div class="field">
       <label>이동 수단 및 예상 이동 시간</label>
       <input type="text" id="transitInput" placeholder="예: 지하철 25분, 택시 15분, 도보 12분" />
-      <div class="hint">애플 경로 버튼을 눌러 Apple Maps에서 소요시간을 확인한 뒤 적어두시면 편리합니다.</div>
+      <div class="hint">경로 버튼을 눌러 지도 앱에서 소요시간을 확인한 뒤 적어두시면 편리합니다.</div>
     </div>
     <div class="modal-actions">
       <button class="btn-sm" onclick="closeModal('transitModal')">취소</button>
@@ -804,11 +827,18 @@
     <h3>새 여행 만들기</h3>
     <div class="field">
       <label>여행 제목</label>
-      <input type="text" id="newTitle" placeholder="예: 2026.12 상하이 2박3일" />
+      <input type="text" id="newTitle" placeholder="예: 2026.12 상하이 2박3일 또는 경주 가족여행" />
     </div>
     <div class="field">
       <label>주요 여행지 (추천 및 지도·경로 검색용)</label>
-      <input type="text" id="newDest" placeholder="예: 상하이" />
+      <input type="text" id="newDest" placeholder="예: 상하이, 경주, 제주, 강릉" oninput="autoDetectRegion()" />
+    </div>
+    <div class="field">
+      <label>지역 구분 (지도 연결 방식)</label>
+      <select id="newIsDomestic">
+        <option value="false">🌏 해외 여행 (애플지도 · 구글맵 연결)</option>
+        <option value="true">🇰🇷 국내 여행 (네이버지도 · 카카오맵 연결)</option>
+      </select>
     </div>
     <div class="field">
       <label>여행 일수</label>
@@ -876,6 +906,22 @@
   const STORAGE_KEY = 'trip_planner_v1';
   const SETTINGS_KEY = 'trip_planner_settings_v1';
 
+  const KOREA_KEYWORDS = [
+    '한국', '국내', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
+    '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주',
+    '원주', '강릉', '속초', '춘천', '평창', '양양', '정선', '동해', '삼척',
+    '경주', '포항', '안동', '영주', '문경', '거제', '통영', '남해', '진주', '창원',
+    '전주', '군산', '여수', '순천', '담양', '목포', '보성', '완도',
+    '수원', '용인', '성남', '고양', '파주', '가평', '양평', '포천', '화성', '평택',
+    '천안', '아산', '공주', '부여', '보령', '태안', '단양', '제천', '충주',
+    '서귀포', '우도', '성산', '애월', '중문'
+  ];
+
+  function checkIsDomestic(destStr) {
+    if (!destStr) return false;
+    return KOREA_KEYWORDS.some(k => destStr.includes(k));
+  }
+
   let state = {
     currentTripId: null,
     selectedDay: 1,
@@ -929,6 +975,7 @@
           id,
           title: '2026.12 상하이 2박 3일',
           destination: '상하이',
+          isDomestic: false,
           daysCount: 3,
           splitCount: 4,
           fxCurrency: 'CNY',
@@ -967,8 +1014,61 @@
       if (!trip.splitCount) trip.splitCount = 4;
       if (!trip.fxCurrency) trip.fxCurrency = 'CNY';
       if (!trip.fxRate) trip.fxRate = 195;
+      if (typeof trip.isDomestic !== 'boolean') {
+        trip.isDomestic = checkIsDomestic(trip.destination);
+      }
     }
     return trip;
+  }
+
+  function toggleDomesticMode() {
+    const trip = getCurrentTrip();
+    if (!trip) return;
+    trip.isDomestic = !trip.isDomestic;
+    saveState();
+    render();
+    showToast(trip.isDomestic ? '🇰🇷 국내 지도(네이버·카카오) 모드로 전환됨' : '🌏 해외 지도(애플·구글) 모드로 전환됨');
+  }
+
+  function buildPlaceMapLinks(destination, placeName, isDomestic) {
+    const q = encodeURIComponent(`${destination} ${placeName}`.trim());
+    if (isDomestic) {
+      const naverUrl = `https://map.naver.com/p/search/${q}`;
+      const kakaoUrl = `https://map.kakao.com/link/search/${q}`;
+      return `
+        <a class="map-btn naver" href="${naverUrl}" target="_blank" rel="noopener">🟢 네이버지도</a>
+        <a class="map-btn kakao" href="${kakaoUrl}" target="_blank" rel="noopener">🟡 카카오맵</a>
+      `;
+    } else {
+      const appleUrl = `https://maps.apple.com/?q=${q}`;
+      const googleUrl = `https://www.google.com/maps/search/?api=1&query=${q}`;
+      return `
+        <a class="map-btn apple" href="${appleUrl}" target="_blank" rel="noopener">🍎 애플지도</a>
+        <a class="map-btn" href="${googleUrl}" target="_blank" rel="noopener">🗺️ 구글맵</a>
+      `;
+    }
+  }
+
+  function buildRouteLinks(destination, fromPlace, toPlace, isDomestic) {
+    const originQ = encodeURIComponent(`${destination} ${fromPlace}`.trim());
+    const destQ = encodeURIComponent(`${destination} ${toPlace}`.trim());
+    if (isDomestic) {
+      // 네이버지도 길찾기 & 카카오맵 목적지 검색/길찾기
+      const naverDir = `https://map.naver.com/p/directions/-/-/-/transit?c=13.00,0,0,0,dh`;
+      const naverDestSearch = `https://map.naver.com/p/search/${destQ}`;
+      const kakaoDest = `https://map.kakao.com/link/search/${destQ}`;
+      return `
+        <a class="route-btn naver" href="${naverDestSearch}" target="_blank" rel="noopener">🟢 네이버지도</a>
+        <a class="route-btn kakao" href="${kakaoDest}" target="_blank" rel="noopener">🟡 카카오맵</a>
+      `;
+    } else {
+      const appleDir = `https://maps.apple.com/?saddr=${originQ}&daddr=${destQ}&dirflg=r`;
+      const googleDir = `https://www.google.com/maps/dir/?api=1&origin=${originQ}&destination=${destQ}&travelmode=transit`;
+      return `
+        <a class="route-btn apple" href="${appleDir}" target="_blank" rel="noopener">🍎 애플 경로</a>
+        <a class="route-btn" href="${googleDir}" target="_blank" rel="noopener">🗺️ 구글 경로</a>
+      `;
+    }
   }
 
   function switchMainTab(tabName) {
@@ -993,6 +1093,8 @@
     ).join('');
 
     document.getElementById('currentTripMeta').textContent = `${trip.destination} · 총 ${trip.daysCount}일 일정`;
+    document.getElementById('regionBadgeBtn').textContent = trip.isDomestic ? '🇰🇷 국내지도' : '🌏 해외지도';
+
     if (!document.getElementById('recCity').value) {
       document.getElementById('recCity').value = trip.destination;
     }
@@ -1025,21 +1127,14 @@
     }
 
     listEl.innerHTML = dayItems.map((item, idx) => {
-      const q = encodeURIComponent(`${trip.destination} ${item.place}`);
-      const appleMap = `https://maps.apple.com/?q=${q}`;
-      const gMap = `https://www.google.com/maps/search/?api=1&query=${q}`;
-      const amapUrl = `https://ditu.amap.com/search?query=${q}`;
       const isFood = item.category === '맛집' || item.category === '카페';
+      const placeMaps = buildPlaceMapLinks(trip.destination, item.place, trip.isDomestic);
 
-      // 다음 장소가 있을 경우 이동 구간 & 애플 경로 / 구글 경로 링크 생성
       let transitHtml = '';
       if (idx < dayItems.length - 1) {
         const nextItem = dayItems[idx + 1];
-        const originQ = encodeURIComponent(`${trip.destination} ${item.place}`);
-        const destQ = encodeURIComponent(`${trip.destination} ${nextItem.place}`);
-        const appleDirUrl = `https://maps.apple.com/?saddr=${originQ}&daddr=${destQ}&dirflg=r`;
-        const gDirUrl = `https://www.google.com/maps/dir/?api=1&origin=${originQ}&destination=${destQ}&travelmode=transit`;
         const transitLabel = item.nextTransit ? `🚶 ${escapeHtml(item.nextTransit)}` : `+ 이동시간 기록`;
+        const routeBtns = buildRouteLinks(trip.destination, item.place, nextItem.place, trip.isDomestic);
 
         transitHtml = `
           <div class="transit-connector">
@@ -1048,8 +1143,7 @@
                 ${transitLabel}
               </button>
               <div class="route-links">
-                <a class="route-btn apple" href="${appleDirUrl}" target="_blank" rel="noopener">🍎 애플 경로</a>
-                <a class="route-btn" href="${gDirUrl}" target="_blank" rel="noopener">🗺️ 구글 경로</a>
+                ${routeBtns}
               </div>
             </div>
           </div>
@@ -1068,9 +1162,7 @@
           ${item.memo ? `<div class="item-memo">${escapeHtml(item.memo)}</div>` : ''}
           <div class="item-footer">
             <div class="map-links">
-              <a class="map-btn apple" href="${appleMap}" target="_blank" rel="noopener">🍎 애플지도</a>
-              <a class="map-btn" href="${amapUrl}" target="_blank" rel="noopener">🧭 고덕지도</a>
-              <a class="map-btn" href="${gMap}" target="_blank" rel="noopener">구글맵</a>
+              ${placeMaps}
             </div>
             <div class="ctrl-btns">
               <button class="ctrl-btn" onclick="openEditItemModal('${item.id}')">수정</button>
@@ -1222,9 +1314,7 @@
       const icon = isHotel ? '🏨' : (bk.type === '식당예약' ? '🍽️' : '🎟️');
       const cardCls = isHotel ? 'hotel' : 'voucher';
       const badgeCls = isHotel ? 'purple' : 'green';
-      const mapQuery = encodeURIComponent(bk.location || `${trip.destination} ${bk.title}`);
-      const appleMap = `https://maps.apple.com/?q=${mapQuery}`;
-      const gMap = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+      const placeMaps = buildPlaceMapLinks(trip.destination, bk.location || bk.title, trip.isDomestic);
 
       return `
         <div class="ticket-card ${cardCls}">
@@ -1244,8 +1334,7 @@
           ${bk.location ? `<div class="hint" style="margin-top:6px;">📍 ${escapeHtml(bk.location)}</div>` : ''}
           ${bk.memo ? `<div class="hint" style="margin-top:4px; color:var(--text);">📝 ${escapeHtml(bk.memo)}</div>` : ''}
           <div style="display:flex; gap:6px; margin-top:9px; flex-wrap:wrap;">
-            <a class="map-btn apple" href="${appleMap}" target="_blank" rel="noopener">🍎 애플지도</a>
-            <a class="map-btn" href="${gMap}" target="_blank" rel="noopener">구글맵</a>
+            ${placeMaps}
             ${bk.url ? `<a class="map-btn" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;" href="${escapeHtml(bk.url)}" target="_blank" rel="noopener">🔗 바우처 링크 열기</a>` : ''}
           </div>
         </div>
@@ -1572,12 +1661,11 @@
   function renderRecommendations(places, city) {
     const trip = getCurrentTrip();
     const resultsEl = document.getElementById('recResults');
+    const isDom = checkIsDomestic(city);
 
     resultsEl.innerHTML = places.map(p => {
       const isFood = p.category === '맛집' || p.category === '카페';
-      const q = encodeURIComponent(`${city} ${p.name}`);
-      const appleMap = `https://maps.apple.com/?q=${q}`;
-      const gMap = `https://www.google.com/maps/search/?api=1&query=${q}`;
+      const placeMaps = buildPlaceMapLinks(city, p.name, isDom);
       let dayBtns = '';
       for (let d = 1; d <= trip.daysCount; d++) {
         dayBtns += `<button class="day-add-btn" onclick='addRecommendedPlace(${d}, ${JSON.stringify(p).replace(/'/g, "&#39;")})'>+ Day ${d}</button>`;
@@ -1594,8 +1682,7 @@
           <div class="rec-desc">${escapeHtml(p.desc || '')}</div>
           <div class="rec-actions">
             ${dayBtns}
-            <a class="map-btn apple" href="${appleMap}" target="_blank" rel="noopener">🍎 애플지도</a>
-            <a class="map-btn" href="${gMap}" target="_blank" rel="noopener">구글맵</a>
+            ${placeMaps}
           </div>
         </div>
       `;
@@ -1640,12 +1727,19 @@
   function openNewTripModal() {
     document.getElementById('newTitle').value = '';
     document.getElementById('newDest').value = '';
+    document.getElementById('newIsDomestic').value = 'false';
     document.getElementById('newTripModal').classList.add('open');
+  }
+
+  function autoDetectRegion() {
+    const dest = document.getElementById('newDest').value.trim();
+    document.getElementById('newIsDomestic').value = checkIsDomestic(dest) ? 'true' : 'false';
   }
 
   function createNewTrip() {
     const title = document.getElementById('newTitle').value.trim();
     const dest = document.getElementById('newDest').value.trim();
+    const isDomestic = document.getElementById('newIsDomestic').value === 'true';
     const daysCount = parseInt(document.getElementById('newDays').value, 10) || 3;
 
     if (!title || !dest) {
@@ -1658,10 +1752,11 @@
       id,
       title,
       destination: dest,
+      isDomestic,
       daysCount,
       splitCount: 4,
-      fxCurrency: 'CNY',
-      fxRate: 195,
+      fxCurrency: isDomestic ? 'KRW' : 'CNY',
+      fxRate: isDomestic ? 1 : 195,
       items: [],
       bookings: [],
       tickets: [],
