@@ -593,7 +593,7 @@
     <!-- AI 명소 & 맛집 추천 카드 -->
     <div class="card">
       <div class="section-header" onclick="toggleRecommendPanel()">
-        <div class="section-title">✨ 여행지 명소 & 맛집 AI 추천</div>
+        <div class="section-title">✨ 여행지 명소 & 맛집 AI 추천 (12곳)</div>
         <span id="recToggleText" style="font-size:0.82rem; color:var(--primary); font-weight:600;">접기 ▲</span>
       </div>
       <div id="recommendBody">
@@ -606,7 +606,7 @@
           </select>
           <input type="text" id="recStyle" class="full" placeholder="세부 조건 (예: 성인 4인, 이동 편한 곳, 대표 음식 추천)" />
           <button class="btn-sm primary full" id="recActionBtn" style="padding:10px;" onclick="handleRecommend()">
-            추천 장소 불러오기
+            AI 맞춤 명소·맛집 12곳 추천받기
           </button>
         </div>
         <div id="recStatus" class="hint" style="margin-top:8px;"></div>
@@ -866,7 +866,7 @@
       <label>Google Gemini API Key (무료 티어 지원)</label>
       <input type="password" id="geminiKeyInput" placeholder="AIzaSy..." />
       <div class="hint">
-        • Google AI Studio 무료 키를 입력하면 여행지 명소 및 맛집 추천이 자동 실행됩니다.<br/>
+        • Google AI Studio 무료 키를 입력하면 여행지 명소 및 맛집 12곳 추천이 자동 실행됩니다.<br/>
         • 현재 기기(localStorage)에만 저장됩니다.
       </div>
     </div>
@@ -905,6 +905,7 @@
 <script>
   const STORAGE_KEY = 'trip_planner_v1';
   const SETTINGS_KEY = 'trip_planner_settings_v1';
+  const REC_COUNT = 12;
 
   const KOREA_KEYWORDS = [
     '한국', '국내', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
@@ -936,6 +937,7 @@
   };
 
   let recOpen = true;
+  const recCache = new Map();
 
   function showToast(msg) {
     const el = document.getElementById('toast');
@@ -1053,8 +1055,6 @@
     const originQ = encodeURIComponent(`${destination} ${fromPlace}`.trim());
     const destQ = encodeURIComponent(`${destination} ${toPlace}`.trim());
     if (isDomestic) {
-      // 네이버지도 길찾기 & 카카오맵 목적지 검색/길찾기
-      const naverDir = `https://map.naver.com/p/directions/-/-/-/transit?c=13.00,0,0,0,dh`;
       const naverDestSearch = `https://map.naver.com/p/search/${destQ}`;
       const kakaoDest = `https://map.kakao.com/link/search/${destQ}`;
       return `
@@ -1563,7 +1563,7 @@
     render();
   }
 
-  /* ==================== AI 장소·맛집 추천 (gemini-3.8-flash) ==================== */
+  /* ==================== AI 장소·맛집 추천 (12곳 · 고속 호출) ==================== */
   function toggleRecommendPanel() {
     recOpen = !recOpen;
     document.getElementById('recommendBody').style.display = recOpen ? 'block' : 'none';
@@ -1573,9 +1573,9 @@
   function updateRecButtonLabel() {
     const btn = document.getElementById('recActionBtn');
     if (settings.geminiApiKey) {
-      btn.textContent = '✨ AI 맞춤 명소·맛집 6곳 추천받기';
+      btn.textContent = `✨ AI 맞춤 명소·맛집 ${REC_COUNT}곳 추천받기`;
     } else {
-      btn.textContent = '📋 AI 추천 프롬프트 복사 (API 키 미설정 시)';
+      btn.textContent = `📋 AI 추천 프롬프트 복사 (${REC_COUNT}곳 기준)`;
     }
   }
 
@@ -1591,30 +1591,38 @@
     }
 
     if (!settings.geminiApiKey) {
-      const prompt = `${city} ${trip.daysCount}일 여행을 계획 중입니다. 추천 유형은 '${focus}', 세부 조건은 '${style}'입니다. 방문하기 좋은 핵심 명소와 맛집 6곳을 예상 소요시간, 추천 시간대, 대표 메뉴/관람 팁과 함께 추천해 주세요.`;
+      const prompt = `${city} ${trip.daysCount}일 여행을 계획 중입니다. 추천 유형은 '${focus}', 세부 조건은 '${style}'입니다. 방문하기 좋은 핵심 명소와 맛집 ${REC_COUNT}곳을 예상 소요시간, 추천 시간대, 대표 메뉴/관람 팁과 함께 간결하게 추천해 주세요.`;
       await navigator.clipboard.writeText(prompt);
       document.getElementById('recStatus').textContent = 'API 키가 없어 질문 프롬프트를 복사했습니다. [⚙️ 설정]에 무료 Gemini API 키를 등록하면 앱 안에서 바로 추천 카드가 뜹니다.';
       showToast('프롬프트가 복사되었습니다!');
       return;
     }
 
-    const btn = document.getElementById('recActionBtn');
+    const cacheKey = `${city}|${trip.daysCount}|${focus}|${style}`;
     const statusEl = document.getElementById('recStatus');
     const resultsEl = document.getElementById('recResults');
 
+    if (recCache.has(cacheKey)) {
+      const cached = recCache.get(cacheKey);
+      renderRecommendations(cached, city);
+      statusEl.textContent = `'${city}' 추천 ${cached.length}곳 (즉시 표시됨)`;
+      return;
+    }
+
+    const btn = document.getElementById('recActionBtn');
     btn.disabled = true;
-    btn.textContent = '명소와 맛집을 찾는 중...';
+    btn.textContent = `명소·맛집 ${REC_COUNT}곳 빠르게 찾는 중...`;
     statusEl.textContent = '';
     resultsEl.innerHTML = '';
 
-    const systemPrompt = `당신은 여행 일정 플래너 도우미입니다. 사용자가 입력한 여행지와 조건에 맞춰 방문하기 좋은 장소(명소 또는 맛집) 6곳을 추천하세요.
-반드시 아래 JSON 배열 형식으로만 응답하고 다른 설명이나 마크다운 코드블록은 쓰지 마세요.
-[{"name":"장소명 또는 식당명","category":"관광 또는 맛집 또는 카페 또는 쇼핑","duration":"예상 소요시간 (예: 1시간 30분)","desc":"추천 이유, 대표 메뉴 또는 관람 팁 1~2문장","suggestedTime":"12:00"}]`;
+    const systemPrompt = `당신은 여행 플래너입니다. 입력 조건에 맞춰 명소와 맛집 ${REC_COUNT}곳을 JSON 배열로만 출력하세요. 마크다운 기호나 부연설명 금지.
+각 항목은 짧고 간결하게 작성하세요:
+[{"name":"장소명","category":"관광 또는 맛집 또는 카페","duration":"1시간 30분","desc":"20자 내외 핵심 한줄 팁","suggestedTime":"12:00"}]`;
 
-    const userPrompt = `여행지: ${city}, 일정: ${trip.daysCount}일, 추천 유형: ${focus}, 세부 조건: ${style}`;
+    const userPrompt = `도시:${city}, 일수:${trip.daysCount}일, 유형:${focus}, 조건:${style}`;
 
     try {
-      const models = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
+      const models = ['gemini-3.5-flash-lite', 'gemini-3.8-flash'];
       let data = null;
       let lastErr = '';
 
@@ -1624,8 +1632,12 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
-            generationConfig: { temperature: 0.7 }
+            contents: [{ parts: [{ text: `${systemPrompt}\n${userPrompt}` }] }],
+            generationConfig: {
+              temperature: 0.6,
+              maxOutputTokens: 2048,
+              responseMimeType: 'application/json'
+            }
           })
         });
 
@@ -1648,8 +1660,9 @@
         throw new Error('추천 결과를 해석하지 못했습니다.');
       }
 
+      recCache.set(cacheKey, places);
       renderRecommendations(places, city);
-      statusEl.textContent = `'${city}' 추천 결과 ${places.length}곳입니다. 원하는 날짜 버튼을 눌러 일정에 추가하세요.`;
+      statusEl.textContent = `'${city}' 추천 장소 ${places.length}곳입니다. 원하는 날짜 버튼을 눌러 일정에 추가하세요.`;
     } catch (err) {
       statusEl.textContent = `추천 호출 오류: ${err.message}`;
     } finally {
@@ -1661,7 +1674,7 @@
   function renderRecommendations(places, city) {
     const trip = getCurrentTrip();
     const resultsEl = document.getElementById('recResults');
-    const isDom = checkIsDomestic(city);
+    const isDom = trip.isDomestic || checkIsDomestic(city);
 
     resultsEl.innerHTML = places.map(p => {
       const isFood = p.category === '맛집' || p.category === '카페';
