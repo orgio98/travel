@@ -627,6 +627,8 @@
     .imp-row { display: flex; gap: 9px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
     .imp-row input { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; accent-color: var(--primary); }
     .ticket-top { flex-wrap: wrap; }
+    .pd-row { display: grid; grid-template-columns: minmax(0, 1fr) 31% 31%; gap: 6px; align-items: center; margin-top: 6px; font-size: 0.78rem; font-weight: 600; }
+    .pd-row input { min-width: 0; width: 100%; padding: 6px 6px; }
     .plan-day { margin: 10px 0; }
     .plan-day-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; }
     .plan-row { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--border); }
@@ -716,6 +718,7 @@
 
       <!-- 수동 일정 추가 폼 -->
       <div class="form-grid divider-top">
+        <button class="btn-sm full" style="padding:9px;" onclick="addLodgingReturn()">🏨 이 날 마지막에 숙소 복귀 추가 (자동 추가를 지운 날용)</button>
         <input type="time" id="addTime" value="10:00" />
         <input type="text" id="addPlace" placeholder="장소명 또는 식당명 입력" />
         <select id="addCategory">
@@ -864,6 +867,10 @@
       <label>방문 시각</label>
       <input type="time" id="editTime" />
     </div>
+    <label style="display:flex; align-items:center; gap:7px; font-size:0.8rem; font-weight:600; margin:-4px 0 10px; cursor:pointer;">
+      <input type="checkbox" id="editShift" style="width:17px; height:17px; accent-color:var(--primary);" checked />
+      시각을 바꾸면 이 날의 이후 일정도 같은 만큼 이동
+    </label>
     <div class="field">
       <label>장소명 / 식당명</label>
       <input type="text" id="editPlace" />
@@ -948,6 +955,10 @@
       <button class="btn-sm" style="width:100%; padding:8px;" onclick="addStopRow()">+ 이동할 도시 추가</button>
       <div class="hint">도시마다 시작일을 정하면 지도 검색·AI 추천·AI 일정·경비 통화가 그날의 도시에 맞춰집니다. 이동일의 출발 → 도착 시각을 넣으면 AI 일정이 이동 시간을 비워 두고 짭니다.</div>
     </div>
+    <label style="display:flex; align-items:center; gap:7px; font-size:0.82rem; font-weight:600; margin-bottom:4px; cursor:pointer;">
+      <input type="checkbox" id="newAutoLodging" style="width:17px; height:17px; accent-color:var(--primary);" checked />
+      일정이 있는 날 마지막에 등록된 숙소 복귀 자동 추가
+    </label>
     <div class="modal-actions">
       <button class="btn-sm" onclick="closeModal('newTripModal')">취소</button>
       <button class="btn-sm primary" id="tripModalSubmit" onclick="submitTripModal()">생성하기</button>
@@ -1046,6 +1057,11 @@
         </select>
       </div>
     </div>
+    <details id="planDayTimesBox" style="margin:-2px 0 10px;">
+      <summary style="font-size:0.8rem; font-weight:600; color:var(--primary); cursor:pointer;">날짜별로 시작·종료 시각 다르게 정하기</summary>
+      <div class="hint">비워 둔 칸은 위의 기본 시각을 씁니다. (왼쪽: 시작, 오른쪽: 종료)</div>
+      <div id="planDayTimes"></div>
+    </details>
     <div class="field">
       <label>숙소 위치 (동선 기준점)</label>
       <input type="text" id="planLodging" placeholder="예: 난징동루 인근 호텔" />
@@ -1054,6 +1070,10 @@
       <label>요청 사항</label>
       <input type="text" id="planStyle" placeholder="예: 부모님 동반, 많이 걷지 않게, 야경 필수, 채식" />
     </div>
+    <label style="display:flex; align-items:center; gap:7px; font-size:0.82rem; font-weight:600; margin-bottom:10px; cursor:pointer;">
+      <input type="checkbox" id="planAddLodging" style="width:17px; height:17px; accent-color:var(--primary);" />
+      일정이 있는 날 마지막에 등록된 숙소 복귀 자동 추가
+    </label>
     <button class="btn-sm primary" id="planGenBtn" style="width:100%; padding:10px;" onclick="generatePlan()">✨ AI 일정 생성하기</button>
     <div id="planStatus" class="hint" style="margin-top:8px;"></div>
     <details id="planPasteBox" style="margin-top:10px;">
@@ -1404,6 +1424,8 @@
       fxCurrency,
       fxRates,
       plan: normalizePlan(t.plan),
+      autoLodging: t.autoLodging !== false,
+      noLodgingDays: (Array.isArray(t.noLodgingDays) ? t.noLodgingDays : []).map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= daysCount),
       items: arr(t.items).filter(x => str(x.place).trim()).map(x => {
         const nextTransit = str(x.nextTransit);
         return {
@@ -1417,7 +1439,11 @@
           transitAuto: typeof x.transitAuto === 'boolean' ? x.transitAuto : AUTO_TRANSIT_RE.test(nextTransit),
           transitTo: str(x.transitTo),
           memo: str(x.memo),
-          done: !!x.done
+          done: !!x.done,
+          ...(typeof x.mapName === 'string' ? { mapName: x.mapName } : {}),
+          ...(SAFE_ID_RE.test(str(x.lodgingId)) ? { lodgingId: str(x.lodgingId) } : {}),
+          ...(x.timeAuto === true ? { timeAuto: true } : {}),
+          ...(x.lodgingManual === true ? { lodgingManual: true } : {})
         };
       }),
       bookings: arr(t.bookings).map(x => ({
@@ -1480,7 +1506,10 @@
     }
   }
 
-  function saveState() { writeStorage(STORAGE_KEY, state); }
+  function saveState() {
+    state.trips.forEach(syncLodging);   // 저장할 때마다 숙소 복귀 항목을 등록된 숙소에 맞춤
+    writeStorage(STORAGE_KEY, state);
+  }
   function saveSettingsToStorage() { writeStorage(SETTINGS_KEY, settings); }
 
   function loadAll() {
@@ -1500,6 +1529,7 @@
       initSampleTrip();
     }
 
+    state.trips.forEach(syncLodging);
     initCurrencySelects();
     jumpToTodayIfOnTrip();
     syncFormDefaults();
@@ -1778,6 +1808,20 @@
     return encodeURIComponent(d && !p.includes(d) ? `${d} ${p}` : p);
   }
 
+  /* 지도에서 찾을 이름. '현지 도착', '도쿄 → 오사카 이동' 같은 안내용 일정은 실제 장소명이 아니므로
+     공항·역 이름만 뽑아 쓰고, 뽑을 장소가 없으면 빈 문자열(지도·경로 버튼 숨김) */
+  function mapNameOf(item) {
+    if (typeof item.mapName === 'string') return item.mapName.trim();
+    if (item.category === '숙소/이동') {
+      let m = item.place.match(/^현지 도착(?: · (.+))?$/);
+      if (m) return m[1] || '';
+      m = item.place.match(/^출발 준비 · (.+)\(으\)로 이동$/);
+      if (m) return m[1] === '공항/역' ? '' : m[1];
+      if (/ → .+ 이동$/.test(item.place)) return '';
+    }
+    return item.place;
+  }
+
   function buildPlaceMapLinks(destination, placeName, isDomestic) {
     const q = mapQuery(destination, placeName);
     if (isDomestic) {
@@ -1802,7 +1846,7 @@
       `;
     }
     return `
-      <a class="route-btn apple" href="https://maps.apple.com/?saddr=${originQ}&daddr=${destQ}&dirflg=r" target="_blank" rel="noopener">🍎 애플 경로</a>
+      <a class="route-btn apple" href="https://maps.apple.com/?saddr=${originQ}&daddr=${destQ}" target="_blank" rel="noopener">🍎 애플 경로</a>
       <a class="route-btn" href="https://www.google.com/maps/dir/?api=1&origin=${originQ}&destination=${destQ}&travelmode=transit" target="_blank" rel="noopener">🗺️ 구글 경로</a>
     `;
   }
@@ -1897,7 +1941,8 @@
     listEl.innerHTML = dayItems.map((item, idx) => {
       const isFood = item.category === '맛집' || item.category === '카페';
       const stop = stopForItem(trip, item);
-      const placeMaps = buildPlaceMapLinks(stop.city, item.place, stop.isDomestic);
+      const mapName = mapNameOf(item);
+      const placeMaps = mapName ? buildPlaceMapLinks(stop.city, mapName, stop.isDomestic) : '';
 
       const startMins = parseTimeToMinutes(item.time);
       let timeDisplay = escapeHtml(item.time || '--:--');
@@ -1928,7 +1973,8 @@
           ? `🚶 ${escapeHtml(item.nextTransit)}${stale ? ' <span class="stale">· 순서 변경됨, 재확인</span>' : ''}`
           : '+ 이동시간 기록';
         const nextStop = stopForItem(trip, nextItem);
-        const routeBtns = buildRouteLinks(stop.city, item.place, nextStop.city, nextItem.place, nextStop.isDomestic);
+        const nextMapName = mapNameOf(nextItem);
+        const routeBtns = (mapName && nextMapName) ? buildRouteLinks(stop.city, mapName, nextStop.city, nextMapName, nextStop.isDomestic) : '';
 
         transitHtml = `
           <div class="transit-connector">
@@ -2035,6 +2081,137 @@
     showToast(`Day ${state.selectedDay}에 추가되었습니다.`);
   }
 
+  /* ==================== 숙소 복귀 (등록된 숙소와 연결) ==================== */
+  /* 그날 밤 묵는 등록 숙소 찾기: 숙박 날짜(예: 12/16~12/18) → 그날 도시 이름 → 숙소가 하나뿐이면 그것.
+     숙소를 옮기는 날은 체크아웃하는 숙소가 아니라 그날 체크인하는 다음 숙소가 선택됨 */
+  function lodgingMatch(trip, day) {
+    const hotels = trip.bookings.filter(b => b.type === '숙소');
+    if (hotels.length === 0) return null;
+    const stayRange = h => {
+      const m = [...h.date.matchAll(/(\d{1,2})\s*[\/.]\s*(\d{1,2})/g)].map(x => Number(x[1]) * 100 + Number(x[2]));
+      return m.length >= 2 ? [m[0], m[1]] : null;
+    };
+    const dt = tripDayDate(trip, day);
+    let undated = hotels;
+    if (dt) {
+      const key = (dt.getMonth() + 1) * 100 + dt.getDate();
+      const byDate = hotels.find(h => {
+        const r = stayRange(h);
+        if (!r) return false;
+        const [inKey, outKey] = r;
+        return inKey <= outKey ? (key >= inKey && key < outKey) : (key >= inKey || key < outKey);   // 연말을 넘기는 숙박 포함
+      });
+      if (byDate) return { hotel: byDate, by: 'date' };
+      /* 숙박 날짜가 적힌 숙소는 그 날짜에만 쓰고, 날짜가 없는 숙소만 도시명·단일 숙소로 맞춤 */
+      undated = hotels.filter(h => !stayRange(h));
+    }
+    const city = dayStops(trip, day).to.city;
+    const byCity = undated.find(h => city && `${h.title} ${h.location}`.includes(city));
+    if (byCity) return { hotel: byCity, by: 'city' };
+    return undated.length === 1 && hotels.length === 1 ? { hotel: undated[0], by: 'single' } : null;
+  }
+
+  function lodgingForDay(trip, day) {
+    const m = lodgingMatch(trip, day);
+    return m ? m.hotel : null;
+  }
+
+  /* 자동으로 넣을 숙소. 여행 마지막 날은 숙박 날짜로 확인될 때만 (보통은 귀국일이라 숙소로 돌아가지 않음) */
+  function autoLodgingHotel(trip, day) {
+    const m = lodgingMatch(trip, day);
+    if (!m) return null;
+    if (day === trip.daysCount && trip.daysCount > 1 && m.by !== 'date') return null;
+    return m.hotel;
+  }
+
+  function lodgingRow(hotel) {
+    return {
+      place: `숙소 복귀 · ${hotel.title}`,
+      mapName: hotel.location || hotel.title,
+      memo: [hotel.subInfo, hotel.code ? '예약번호 ' + hotel.code : ''].filter(Boolean).join(' · '),
+      lodgingId: hotel.id
+    };
+  }
+
+  /* 도착·출발·도시 간 이동처럼 교통편 시각에 묶인 안내 항목 */
+  function isFixedTimeItem(x) {
+    return x.category === '숙소/이동' && !isLodgingItem(x) && mapNameOf(x) !== x.place;
+  }
+
+  function isLodgingItem(x) {
+    return !!x.lodgingId || (x.category === '숙소/이동' && x.place.startsWith('숙소 복귀 · ') && typeof x.mapName === 'string');
+  }
+
+  function lodgingTime(others) {
+    const last = others[others.length - 1];
+    const start = last ? parseTimeToMinutes(last.time) : null;
+    if (start === null) return '21:00';
+    const end = start + (last.duration ? parseDurationToMinutes(last.duration, last.category) : 0);
+    return formatMinutesToTime(Math.round((end + 30) / 10) * 10);
+  }
+
+  /* 숙소 등록·수정·삭제, 일정 추가·삭제, 날짜 변경이 있을 때마다 호출되어
+     일정이 있는 날의 맨 끝에 그날 묵는 숙소 복귀 항목을 맞춰 둠 */
+  function syncLodging(trip) {
+    if (!trip.autoLodging) return;
+    const hotels = trip.bookings.filter(b => b.type === '숙소');
+    const kept = [];
+    for (let d = 1; d <= trip.daysCount; d++) {
+      const items = getDayItems(trip, d);
+      const others = items.filter(x => !isLodgingItem(x));
+      let keep = items.find(isLodgingItem) || null;
+      const auto = autoLodgingHotel(trip, d);
+      const autoWant = !!auto && others.length > 0 && !trip.noLodgingDays.includes(d);
+      let hotel = null;
+      if (keep) {
+        hotel = keep.lodgingManual
+          ? (lodgingForDay(trip, d) || hotels.find(h => h.id === keep.lodgingId) || null)
+          : (autoWant ? auto : null);
+        if (!hotel) keep = null;
+      } else if (autoWant) {
+        hotel = auto;
+        keep = { id: newId('item'), day: d, time: '', duration: '', done: false, timeAuto: true };
+      }
+      if (!keep) continue;
+      Object.assign(keep, lodgingRow(hotel), { category: '숙소/이동', nextTransit: '', transitAuto: false, transitTo: '' });
+      if (keep.timeAuto) keep.time = lodgingTime(others);
+      kept.push(keep);
+      const lastOther = others[others.length - 1];
+      if (lastOther && (!lastOther.nextTransit || lastOther.transitAuto)) lastOther.transitAuto = true;   // 숙소까지 이동시간 추정
+    }
+    trip.items = [...trip.items.filter(x => !isLodgingItem(x)), ...kept];
+    for (let d = 1; d <= trip.daysCount; d++) refreshAutoTransit(trip, d);
+  }
+
+  function addLodgingReturn() {
+    const trip = getCurrentTrip();
+    const day = state.selectedDay;
+    if (!trip.bookings.some(b => b.type === '숙소')) {
+      showToast('등록된 숙소가 없습니다. 숙소·바우처 탭에 먼저 저장해 주세요.');
+      return;
+    }
+    const hotel = lodgingForDay(trip, day);
+    if (!hotel) {
+      showToast(`Day ${day}에 맞는 숙소를 찾지 못했습니다. 숙소의 날짜(예: 12/16~12/18)나 주소에 도시명을 적어 주세요.`);
+      return;
+    }
+    const dayItems = getDayItems(trip, day);
+    if (dayItems.some(isLodgingItem)) {
+      showToast('이 날에는 이미 숙소 복귀가 있습니다.');
+      return;
+    }
+    const row = lodgingRow(hotel);
+    trip.noLodgingDays = trip.noLodgingDays.filter(x => x !== day);
+    linkLastItemTo(trip, day, row.mapName);
+    trip.items.push({
+      id: newId('item'), day, time: lodgingTime(dayItems), category: '숙소/이동', duration: '',
+      nextTransit: '', transitAuto: false, transitTo: '', done: false, timeAuto: true, lodgingManual: true, ...row
+    });
+    saveState();
+    render();
+    showToast(`'${hotel.title}' 복귀를 추가했습니다.`);
+  }
+
   function openEditItemModal(itemId) {
     const trip = getCurrentTrip();
     const item = trip.items.find(x => x.id === itemId);
@@ -2054,6 +2231,7 @@
     document.getElementById('editDuration').value = item.duration || '';
     document.getElementById('editNextTransit').value = item.nextTransit || '';
     document.getElementById('editMemo').value = item.memo || '';
+    document.getElementById('editShift').checked = true;
     document.getElementById('editItemModal').classList.add('open');
   }
 
@@ -2072,11 +2250,27 @@
     const newTransit = document.getElementById('editNextTransit').value.trim();
     const transitEdited = newTransit !== item.nextTransit;
 
+    const oldMins = parseTimeToMinutes(item.time);
+    if (document.getElementById('editTime').value !== item.time) item.timeAuto = false;   // 직접 고친 시각은 유지
     item.time = document.getElementById('editTime').value;
+    if (item.place !== place) delete item.mapName;   // 이름을 고치면 새 이름으로 지도 검색
     item.place = place;
     item.category = document.getElementById('editCategory').value;
     item.duration = document.getElementById('editDuration').value.trim();
     item.memo = document.getElementById('editMemo').value.trim();
+
+    /* 시각을 바꾸면 그날의 이후 일정도 같은 만큼 이동 (항공·기차처럼 시각이 정해진 항목은 그대로 둠) */
+    const delta = (parseTimeToMinutes(item.time) ?? NaN) - (oldMins ?? NaN);
+    let shifted = 0;
+    if (delta && newDay === oldDay && document.getElementById('editShift').checked) {
+      const dayItems = getDayItems(trip, oldDay);
+      dayItems.slice(dayItems.findIndex(x => x.id === id) + 1).forEach(it => {
+        const t = parseTimeToMinutes(it.time);
+        if (t === null || isFixedTimeItem(it) || it.timeAuto) return;
+        it.time = formatMinutesToTime(t + delta);
+        shifted++;
+      });
+    }
 
     if (newDay !== oldDay) {
       /* 다른 날의 맨 끝으로 이동: 기존 '다음 장소' 정보는 더 이상 맞지 않으므로 비움 */
@@ -2102,7 +2296,7 @@
     saveState();
     closeModal('editItemModal');
     render();
-    showToast(newDay !== oldDay ? `Day ${newDay}(으)로 옮겼습니다.` : '일정이 수정되었습니다.');
+    showToast(newDay !== oldDay ? `Day ${newDay}(으)로 옮겼습니다.` : (shifted ? `이후 일정 ${shifted}개도 ${minsToText(Math.abs(delta))} ${delta > 0 ? '미뤘습니다' : '앞당겼습니다'}.` : '일정이 수정되었습니다.'));
   }
 
   function openTransitModal(itemId) {
@@ -2150,10 +2344,12 @@
     if (!item) return;
     snapshotForUndo();
     trip.items = trip.items.filter(x => x.id !== itemId);
+    const wasLodging = isLodgingItem(item);
+    if (wasLodging && !trip.noLodgingDays.includes(item.day)) trip.noLodgingDays.push(item.day);   // 지운 날에는 다시 자동으로 넣지 않음
     refreshAutoTransit(trip, item.day);
     saveState();
     render();
-    showToast(`'${item.place}' 삭제됨`, { undo: true });
+    showToast(wasLodging ? '숙소 복귀 삭제됨 · 이 날은 자동으로 다시 넣지 않습니다' : `'${item.place}' 삭제됨`, { undo: true });
   }
 
   function moveItem(itemId, dir) {
@@ -2885,7 +3081,11 @@
       postBuf: mins(o.postBuf), preBuf: mins(o.preBuf),
       dayStart: clock(o.dayStart, '09:00'), dayEnd: clock(o.dayEnd, '21:00'),
       pace: PACE[o.pace] ? o.pace : 'normal',
-      lodging: str(o.lodging), style: str(o.style)
+      lodging: str(o.lodging), style: str(o.style),
+      dayTimes: Object.fromEntries(Object.entries((o.dayTimes && typeof o.dayTimes === 'object') ? o.dayTimes : {})
+        .filter(([d, v]) => /^\d+$/.test(d) && v && typeof v === 'object')
+        .map(([d, v]) => [d, { start: clock(v.start, ''), end: clock(v.end, '') }])
+        .filter(([, v]) => v.start || v.end))
     };
   }
 
@@ -2947,6 +3147,19 @@
     set('planStyle', plan.style);
     set('planScope', trip.items.length > 0 ? 'empty' : 'all');
     set('planPaste', '');
+    let rowsHtml = '';
+    for (let d = 1; d <= trip.daysCount; d++) {
+      const t = plan.dayTimes[d] || {};
+      rowsHtml += `
+        <div class="pd-row" data-day="${d}">
+          <span>${dayLabel(trip, d)}${trip.stops.length > 1 ? ' · ' + escapeHtml(dayCityLabel(trip, d)) : ''}</span>
+          <input type="time" class="pd-start" value="${escapeHtml(t.start || '')}" title="시작" />
+          <input type="time" class="pd-end" value="${escapeHtml(t.end || '')}" title="종료" />
+        </div>`;
+    }
+    document.getElementById('planDayTimes').innerHTML = rowsHtml;
+    document.getElementById('planDayTimesBox').open = Object.keys(plan.dayTimes).some(d => Number(d) <= trip.daysCount);
+    document.getElementById('planAddLodging').checked = trip.autoLodging;
 
     const usedGuess = (!plan.arrTime && guess.arrTime) || (!plan.depTime && guess.depTime);
     document.getElementById('planTicketHint').textContent = usedGuess
@@ -2967,13 +3180,16 @@
   /* 날짜별로 일정을 넣을 수 있는 시간대(도시별 구간 목록) 계산.
      첫날은 도착+여유 이후, 마지막 날은 출발-여유 이전, 도시 간 이동일은 이동 전(떠나는 도시)과 이동 후(도착 도시)로 나눔 */
   function computePlanWindows(trip, plan) {
-    const ds = parseTimeToMinutes(plan.dayStart);
-    const de = parseTimeToMinutes(plan.dayEnd);
+    const ds0 = parseTimeToMinutes(plan.dayStart);
+    const de0 = parseTimeToMinutes(plan.dayEnd);
     const arr = parseTimeToMinutes(plan.arrTime);
     const dep = parseTimeToMinutes(plan.depTime);
     const windows = {};
     for (let d = 1; d <= trip.daysCount; d++) {
       const { from, to, isMove } = dayStops(trip, d);
+      const own = plan.dayTimes[d] || {};   // 그날만 따로 정한 시작·종료 시각
+      const ds = parseTimeToMinutes(own.start) ?? ds0;
+      const de = parseTimeToMinutes(own.end) ?? de0;
       const mDep = parseTimeToMinutes(to.moveDep);
       const mArr = parseTimeToMinutes(to.moveArr);
       let segs;
@@ -2998,6 +3214,16 @@
     return windows;
   }
 
+  function collectPlanDayTimes() {
+    const out = {};
+    document.querySelectorAll('#planDayTimes .pd-row').forEach(row => {
+      const start = row.querySelector('.pd-start').value;
+      const end = row.querySelector('.pd-end').value;
+      if (start || end) out[row.dataset.day] = { start, end };
+    });
+    return out;
+  }
+
   /* 폼을 읽어 여행에 저장하고, 생성에 필요한 조건 묶음을 반환 (문제가 있으면 null) */
   function readPlanForm() {
     const trip = getCurrentTrip();
@@ -3007,7 +3233,8 @@
       depTime: get('planDepTime'), depPlace: get('planDepPlace'),
       postBuf: get('planPostBuf'), preBuf: get('planPreBuf'),
       dayStart: get('planDayStart'), dayEnd: get('planDayEnd'),
-      pace: get('planPace'), lodging: get('planLodging'), style: get('planStyle')
+      pace: get('planPace'), lodging: get('planLodging'), style: get('planStyle'),
+      dayTimes: collectPlanDayTimes()
     });
     if (plan.postBuf === null) plan.postBuf = trip.isDomestic ? 30 : 90;
     if (plan.preBuf === null) plan.preBuf = trip.isDomestic ? 60 : 180;
@@ -3016,7 +3243,15 @@
       showToast('하루 일정 종료 시각이 시작 시각보다 늦어야 합니다.');
       return null;
     }
+    for (let d = 1; d <= trip.daysCount; d++) {
+      const t = plan.dayTimes[d] || {};
+      if (parseTimeToMinutes(t.start || plan.dayStart) >= parseTimeToMinutes(t.end || plan.dayEnd)) {
+        showToast(`Day ${d}의 종료 시각이 시작 시각보다 늦어야 합니다.`);
+        return null;
+      }
+    }
     trip.plan = plan;
+    trip.autoLodging = document.getElementById('planAddLodging').checked;
     saveState();
 
     const scope = get('planScope') === 'all' ? 'all' : 'empty';
@@ -3034,7 +3269,7 @@
       return null;
     }
     const keptPlaces = trip.items.filter(x => !targetDays.includes(x.day)).map(x => x.place);
-    return { trip, plan, scope, targetDays, windows, keptPlaces };
+    return { trip, plan, scope, targetDays, windows, keptPlaces, addLodging: document.getElementById('planAddLodging').checked };
   }
 
   function buildPlanPrompt(ctx) {
@@ -3125,6 +3360,7 @@ ${dayLines}
       byDay[1].unshift({
         time: plan.arrTime, place: `현지 도착${plan.arrPlace ? ' · ' + plan.arrPlace : ''}`, category: '숙소/이동',
         duration: plan.postBuf > 0 ? minsToText(plan.postBuf) : '', transit: '',
+        mapName: plan.arrPlace,
         memo: `${trip.isDomestic ? '' : '입국 수속·짐 찾기 후 '}${plan.lodging ? plan.lodging + '(으)로 이동해 짐 보관' : '숙소로 이동해 짐 보관'}`,
         anchor: true
       });
@@ -3135,6 +3371,7 @@ ${dayLines}
       byDay[last].push({
         time: formatMinutesToTime(dep - plan.preBuf), place: `출발 준비 · ${plan.depPlace || '공항/역'}(으)로 이동`, category: '숙소/이동',
         duration: plan.preBuf > 0 ? minsToText(plan.preBuf) : '', transit: '',
+        mapName: plan.depPlace,
         memo: `${plan.depTime} 출발 · 이동 및 탑승 수속 시간`,
         anchor: true
       });
@@ -3148,11 +3385,26 @@ ${dayLines}
       byDay[d].push({
         time: to.moveDep || to.moveArr, place: `${from.city} → ${to.city} 이동`, category: '숙소/이동',
         duration: (mDep !== null && mArr !== null) ? minsToText(mArr - mDep) : '', transit: '',
+        mapName: '',
         memo: [MOVE_TYPES[to.moveType].label, to.moveDep ? `${to.moveDep} 출발` : '', to.moveArr ? `${to.moveArr} 도착` : ''].filter(Boolean).join(' · '),
         anchor: true
       });
       byDay[d].sort((a, b) => parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time));
     });
+    /* 그날 묵는 등록 숙소로 돌아가는 항목을 하루 끝에 추가 (출발하는 마지막 날 제외) */
+    if (ctx.addLodging) {
+      targetDays.forEach(d => {
+        const rows = byDay[d];
+        const hotel = autoLodgingHotel(trip, d);
+        if (!hotel || rows.length === 0) return;
+        const lastRow = rows[rows.length - 1];
+        const endMins = parseTimeToMinutes(lastRow.time) + (lastRow.duration ? parseDurationToMinutes(lastRow.duration, lastRow.category) : 0);
+        rows.push({
+          time: formatMinutesToTime(Math.round((endMins + 30) / 10) * 10), category: '숙소/이동', duration: '', transit: '',
+          ...lodgingRow(hotel), anchor: true
+        });
+      });
+    }
     return { tripId: trip.id, scope: ctx.scope, targetDays, byDay, dropped, aiCount };
   }
 
@@ -3251,6 +3503,7 @@ ${dayLines}
     if (!d || d.tripId !== trip.id) return;
     snapshotForUndo();
     if (d.scope === 'all') trip.items = [];
+    trip.noLodgingDays = trip.noLodgingDays.filter(x => !d.targetDays.includes(x));
 
     d.targetDays.forEach(day => {
       if (getDayItems(trip, day).length > 0) return;   // 그사이 채워진 날은 건드리지 않음
@@ -3263,7 +3516,9 @@ ${dayLines}
           nextTransit: hasNext && r.transit ? `${r.transit} (AI 추정)` : '',
           transitAuto: false,
           transitTo: hasNext && r.transit ? ids[i + 1] : '',
-          memo: r.memo, done: false
+          memo: r.memo, done: false,
+          ...(typeof r.mapName === 'string' ? { mapName: r.mapName } : {}),
+          ...(r.lodgingId ? { lodgingId: r.lodgingId, timeAuto: true } : {})
         });
       });
     });
@@ -3558,6 +3813,7 @@ ${dayLines}
     document.getElementById('newStart').value = trip ? trip.startDate : '';
     document.getElementById('newDays').value = trip ? trip.daysCount : 3;
     renderStopRows(trip ? trip.stops : []);
+    document.getElementById('newAutoLodging').checked = trip ? trip.autoLodging : true;
     document.getElementById('newTripModal').classList.add('open');
   }
 
@@ -3604,6 +3860,7 @@ ${dayLines}
       trip.title = title;
       trip.destination = dest;
       trip.stops = stops;
+      trip.autoLodging = document.getElementById('newAutoLodging').checked;
       trip.isDomestic = stops.every(s => s.isDomestic);
       trip.startDate = startDate;
       trip.daysCount = daysRaw;
@@ -3620,6 +3877,7 @@ ${dayLines}
 
     const trip = normalizeTrip({
       id: newId('trip'), title, destination: dest, isDomestic, daysCount: daysRaw, startDate, stops,
+      autoLodging: document.getElementById('newAutoLodging').checked,
       splitCount: 4, fxCurrency: guessCurrency(`${stops.map(x => x.city).join(' ')} ${dest}`)
     });
     state.trips.unshift(trip);
