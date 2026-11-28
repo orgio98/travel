@@ -629,6 +629,7 @@
     .ticket-top { flex-wrap: wrap; }
     .pd-row { display: grid; grid-template-columns: minmax(0, 1fr) 31% 31%; gap: 6px; align-items: center; margin-top: 6px; font-size: 0.78rem; font-weight: 600; }
     .pd-row input { min-width: 0; width: 100%; padding: 6px 6px; }
+    .sync-ask { margin-top: 10px; padding: 11px; border: 1px solid #bfdbfe; background: var(--primary-light); border-radius: 11px; }
     .plan-day { margin: 10px 0; }
     .plan-day-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; }
     .plan-row { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--border); }
@@ -652,7 +653,7 @@
     <div class="app-title">🧭 여행 플래너</div>
     <div class="icon-btns">
       <button class="btn-sm" onclick="copyShareText()">📋 공유</button>
-      <button class="btn-sm" onclick="openSyncModal()">☁️ 동기화</button>
+      <button class="btn-sm" id="syncBtn" onclick="openSyncModal()">☁️ 동기화</button>
       <button class="btn-sm" onclick="openSettingsModal()">⚙️ 설정</button>
     </div>
   </div>
@@ -1124,6 +1125,13 @@
       <button class="btn-sm primary" style="flex:1; padding:9px;" onclick="syncToGist('upload')">⬆️ Gist에 저장</button>
       <button class="btn-sm" style="flex:1; padding:9px;" onclick="syncToGist('download')">⬇️ Gist에서 불러오기</button>
     </div>
+    <div id="syncStatus" class="hint" style="margin-top:10px; color:var(--text);"></div>
+    <div id="syncConfirm"></div>
+    <label style="display:flex; align-items:center; gap:7px; font-size:0.82rem; font-weight:600; margin-top:10px; cursor:pointer;">
+      <input type="checkbox" id="autoSyncChk" style="width:17px; height:17px; accent-color:var(--primary);" onchange="onAutoSyncToggle(this.checked)" checked />
+      자동 동기화
+    </label>
+    <div class="hint">켜 두면 앱을 열 때 다른 기기의 변경을 받아오고, 내용을 바꾸면 몇 초 뒤 Gist에 저장합니다. 토큰과 Gist ID가 연결된 뒤부터 동작합니다.</div>
     <div class="backup-box">
       <div class="field" style="margin-bottom:6px;"><label>💾 파일 백업 (토큰 없이 사용 가능)</label></div>
       <div style="display:flex; gap:8px;">
@@ -1485,6 +1493,7 @@
       currentTripId: current.id,
       selectedDay: clampInt(raw.selectedDay, 1, current.daysCount, 1),
       activeMainTab: MAIN_TABS.includes(raw.activeMainTab) ? raw.activeMainTab : 'itinerary',
+      rev: Number(raw.rev) || 0,
       trips
     };
   }
@@ -1508,6 +1517,13 @@
 
   function saveState() {
     state.trips.forEach(syncLodging);   // 저장할 때마다 숙소 복귀 항목을 등록된 숙소에 맞춤
+    /* 여행 내용이 실제로 바뀌었을 때만 수정 시각(rev)을 올리고 자동 동기화를 예약 (탭·날짜 선택은 제외) */
+    const json = JSON.stringify(state.trips);
+    if (lastTripsJson !== null && json !== lastTripsJson) {
+      state.rev = Date.now();
+      scheduleAutoPush();
+    }
+    lastTripsJson = json;
     writeStorage(STORAGE_KEY, state);
   }
   function saveSettingsToStorage() { writeStorage(SETTINGS_KEY, settings); }
@@ -1518,7 +1534,10 @@
       settings = {
         geminiApiKey: str(savedSettings.geminiApiKey),
         gistToken: str(savedSettings.gistToken),
-        gistId: str(savedSettings.gistId)
+        gistId: str(savedSettings.gistId),
+        lastSync: str(savedSettings.lastSync),
+        autoSync: savedSettings.autoSync !== false,
+        syncedRev: typeof savedSettings.syncedRev === 'number' ? savedSettings.syncedRev : null
       };
     }
 
@@ -1529,13 +1548,15 @@
       initSampleTrip();
     }
 
-    state.trips.forEach(syncLodging);
+    lastTripsJson = JSON.stringify(state.trips);
+    saveState();
     initCurrencySelects();
     jumpToTodayIfOnTrip();
     syncFormDefaults();
     updateRecButtonLabel();
     applyMainTab();
     render();
+    autoSync();   // 다른 기기에서 바뀐 내용이 있으면 받아옴
   }
 
   function initSampleTrip() {
@@ -3984,6 +4005,10 @@ ${dayLines}
   function openSyncModal() {
     document.getElementById('gistTokenInput').value = settings.gistToken || '';
     document.getElementById('gistIdInput').value = settings.gistId || '';
+    document.getElementById('syncConfirm').innerHTML = '';
+    document.getElementById('autoSyncChk').checked = settings.autoSync !== false;
+    setSyncStatus(settings.lastSync || '');
+    showConflictAsk();
     document.getElementById('syncModal').classList.add('open');
   }
 
@@ -4003,19 +4028,236 @@ ${dayLines}
   }
 
   /* 토큰 계정의 Gist 목록에서 여행 데이터 파일이 든 Gist를 찾음 (여러 개면 가장 최근에 수정된 것) */
-  async function findSyncGist(headers, fileName) {
+  const GIST_FILE = 'trip-planner-data.json';
+  const AUTO_PUSH_DELAY = 4000;
+  let lastTripsJson = null;     // 마지막으로 저장한 여행 내용 (바뀌었는지 판단용)
+  let autoPushTimer = null;
+  let syncBusy = false;
+  let syncQueued = false;
+  let lastAutoPull = 0;
+  let pendingConflict = null;   // 두 기기에서 모두 고쳐서 선택이 필요한 Gist 내용
+  let lastConflictRev = null;
+
+  function setSyncStatus(text) {
+    document.getElementById('syncStatus').textContent = text;
+  }
+
+  function setSyncBadge(mark) {
+    document.getElementById('syncBtn').textContent = '☁️ 동기화' + (mark ? ' ' + mark : '');
+  }
+
+  /* 동기화 창 안에서 확인을 받음 (브라우저 확인 창은 홈 화면 앱에서 뜨지 않는 경우가 있음) */
+  function askInSync(text, yesLabel, onYes, altLabel, onAlt) {
+    const box = document.getElementById('syncConfirm');
+    box.innerHTML = `
+      <div class="sync-ask">
+        <div style="font-size:0.84rem; line-height:1.45;">${escapeHtml(text)}</div>
+        <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+          <button class="btn-sm primary" style="flex:1; padding:9px;" id="syncYesBtn">${escapeHtml(yesLabel)}</button>
+          ${altLabel ? `<button class="btn-sm" style="flex:1; padding:9px;" id="syncAltBtn">${escapeHtml(altLabel)}</button>` : ''}
+          <button class="btn-sm" style="padding:9px 14px;" id="syncNoBtn">취소</button>
+        </div>
+      </div>`;
+    document.getElementById('syncYesBtn').onclick = () => { box.innerHTML = ''; onYes(); };
+    if (altLabel) document.getElementById('syncAltBtn').onclick = () => { box.innerHTML = ''; onAlt(); };
+    document.getElementById('syncNoBtn').onclick = () => { box.innerHTML = ''; setSyncStatus('취소했습니다. 이 기기의 데이터는 그대로입니다.'); };
+    box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  function formatWhen(iso) {
+    const dt = new Date(iso);
+    if (!iso || isNaN(dt)) return '';
+    return `${dt.getMonth() + 1}/${dt.getDate()} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+  }
+
+  function gistHeaders() {
+    return { 'Authorization': `Bearer ${settings.gistToken}`, 'Accept': 'application/vnd.github+json' };
+  }
+
+  function gistError(res) {
+    return new Error(res.status === 401 ? '토큰이 올바르지 않습니다 (401)'
+      : res.status === 403 ? '토큰에 Gist 권한이 없거나 요청이 너무 많습니다 (403)'
+      : res.status === 404 ? 'Gist를 찾을 수 없습니다 (404)' : `HTTP ${res.status}`);
+  }
+
+  /* 토큰 계정의 Gist 목록에서 여행 데이터 파일이 든 Gist를 찾음 (여러 개면 가장 최근에 수정된 것) */
+  async function findSyncGist() {
     const found = [];
     for (let pageNo = 1; pageNo <= 3; pageNo++) {
-      const res = await fetch(`https://api.github.com/gists?per_page=100&page=${pageNo}`, { headers });
-      if (!res.ok) throw new Error(res.status === 401 ? '토큰이 올바르지 않습니다 (401)' : res.status === 403 ? '토큰에 Gist 권한이 없습니다 (403)' : `HTTP ${res.status}`);
+      const res = await fetch(`https://api.github.com/gists?per_page=100&page=${pageNo}`, { headers: gistHeaders(), cache: 'no-store' });
+      if (!res.ok) throw gistError(res);
       const list = await res.json();
       if (!Array.isArray(list)) break;
-      list.forEach(g => { if (g && g.files && g.files[fileName]) found.push(g); });
+      list.forEach(g => { if (g && g.files && g.files[GIST_FILE]) found.push(g); });
       if (list.length < 100) break;
     }
     found.sort((a, b) => str(b.updated_at).localeCompare(str(a.updated_at)));
     return found.length ? str(found[0].id) : '';
   }
+
+  /* Gist의 현재 내용을 항상 새로 받아옴 (브라우저가 직전 응답을 재사용하지 않도록 no-store) */
+  async function fetchGistState() {
+    const res = await fetch(`https://api.github.com/gists/${settings.gistId}`, { headers: gistHeaders(), cache: 'no-store' });
+    if (!res.ok) throw gistError(res);
+    const data = await res.json();
+    const file = data.files && data.files[GIST_FILE];
+    if (!file) return { state: null, rev: 0, updatedAt: data.updated_at };
+    let content = file.content;
+    if (file.truncated && file.raw_url) {
+      /* 1MB를 넘는 파일은 본문이 잘려서 오므로 원본 주소에서 다시 받음 */
+      const rawRes = await fetch(file.raw_url, { cache: 'no-store' });
+      if (!rawRes.ok) throw new Error(`HTTP ${rawRes.status}`);
+      content = await rawRes.text();
+    }
+    let loaded = null;
+    try { loaded = normalizeState(JSON.parse(content || 'null')); } catch (e) { loaded = null; }
+    return { state: loaded, rev: loaded ? loaded.rev : 0, updatedAt: data.updated_at };
+  }
+
+  async function pushGist(id, auto) {
+    if (!state.rev) state.rev = Date.now();
+    const pushedRev = state.rev;
+    const body = {
+      description: 'Trip Planner Sync Data',
+      public: false,
+      files: { [GIST_FILE]: { content: JSON.stringify(state, null, 2) } }
+    };
+    const res = await fetch(id ? `https://api.github.com/gists/${id}` : 'https://api.github.com/gists', {
+      method: id ? 'PATCH' : 'POST',
+      headers: { ...gistHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw gistError(res);
+    const data = await res.json();
+    settings.gistId = str(data.id);
+    settings.syncedRev = pushedRev;
+    settings.lastSync = `✅ ${formatWhen(new Date().toISOString())} 이 기기 → Gist 저장 완료 (여행 ${state.trips.length}개${auto ? ', 자동' : ''})`;
+    saveSettingsToStorage();
+    writeStorage(STORAGE_KEY, state);
+    pendingConflict = null;
+  }
+
+  /* Gist 내용을 이 기기에 적용. 보고 있던 여행·날짜·탭은 가능한 한 유지 (되돌리기 가능) */
+  function applyRemote(remote, msg, auto) {
+    snapshotForUndo();
+    const next = remote.state;
+    const sameTrip = next.trips.find(t => t.id === state.currentTripId);
+    if (sameTrip) {
+      next.currentTripId = sameTrip.id;
+      next.selectedDay = clampInt(state.selectedDay, 1, sameTrip.daysCount, 1);
+    }
+    next.activeMainTab = state.activeMainTab;
+    state = next;
+    state.rev = remote.rev;
+    lastTripsJson = JSON.stringify(state.trips);
+    settings.syncedRev = remote.rev;
+    settings.lastSync = `✅ ${formatWhen(new Date().toISOString())} Gist → 이 기기 불러오기 완료 (여행 ${state.trips.length}개${auto ? ', 자동' : ''})`;
+    saveSettingsToStorage();
+    pendingConflict = null;
+    document.getElementById('recCity').value = '';
+    lastRec = null;
+    resetAllForms();
+    syncFormDefaults();
+    saveState();
+    applyMainTab();
+    render();
+    showToast(msg, { undo: true });
+  }
+
+  function autoSyncReady() {
+    return settings.autoSync !== false && !!settings.gistToken && !!settings.gistId;
+  }
+
+  function scheduleAutoPush(delay) {
+    if (!autoSyncReady()) return;
+    clearTimeout(autoPushTimer);
+    autoPushTimer = setTimeout(autoSync, delay ?? AUTO_PUSH_DELAY);
+  }
+
+  function describeRemote(remote) {
+    const titles = remote.state.trips.slice(0, 3).map(t => t.title).join(', ') + (remote.state.trips.length > 3 ? ' 외' : '');
+    const when = formatWhen(remote.updatedAt);
+    return `여행 ${remote.state.trips.length}개 (${titles})${when ? ' · 마지막 저장 ' + when : ''}`;
+  }
+
+  function showConflictAsk() {
+    if (!pendingConflict) return;
+    const remote = pendingConflict;
+    setSyncStatus('');
+    askInSync(`이 기기와 Gist의 내용이 서로 다르게 바뀌어 자동으로 합치지 못했습니다. Gist: ${describeRemote(remote)} / 이 기기: 여행 ${state.trips.length}개. 어느 쪽을 남길까요?`,
+      'Gist 내용 받기', () => { closeModal('syncModal'); applyRemote(remote, 'Gist 내용으로 맞췄습니다.'); setSyncBadge('✓'); },
+      '이 기기 내용으로 덮어쓰기', async () => {
+        try {
+          await pushGist(settings.gistId);
+          setSyncBadge('✓');
+          setSyncStatus(settings.lastSync);
+        } catch (err) {
+          setSyncStatus(`❌ 동기화 실패: ${err.message}`);
+        }
+      });
+  }
+
+  /* 자동 동기화: 앱을 열 때·돌아올 때 Gist를 확인하고, 내용을 바꾸면 잠시 뒤 저장.
+     한쪽만 바뀌었으면 그쪽을 반영하고, 양쪽이 다 바뀌었으면 멈추고 사용자에게 물음 */
+  async function autoSync() {
+    if (!autoSyncReady()) return;
+    if (syncBusy) {
+      syncQueued = true;
+      return;
+    }
+    syncBusy = true;
+    lastAutoPull = Date.now();
+    setSyncBadge('…');
+    try {
+      const remote = await fetchGistState();
+      const same = !!remote.state && JSON.stringify(remote.state.trips) === JSON.stringify(state.trips);
+      const known = settings.syncedRev != null;
+      const localDirty = known && state.rev !== settings.syncedRev;
+      const remoteChanged = known && remote.rev !== settings.syncedRev;
+      let conflict = false;
+      if (!remote.state) {
+        await pushGist(settings.gistId, true);
+      } else if (same) {
+        state.rev = remote.rev;
+        settings.syncedRev = remote.rev;
+        saveSettingsToStorage();
+        writeStorage(STORAGE_KEY, state);
+        pendingConflict = null;
+      } else if (known && !remoteChanged && localDirty) {
+        await pushGist(settings.gistId, true);
+      } else if (known && remoteChanged && !localDirty) {
+        applyRemote(remote, '다른 기기에서 바꾼 내용을 불러왔습니다.', true);
+      } else {
+        conflict = true;
+        pendingConflict = remote;
+        if (lastConflictRev !== remote.rev) {
+          lastConflictRev = remote.rev;
+          showToast('다른 기기와 내용이 달라 자동 동기화를 멈췄습니다. ☁️ 동기화에서 선택해 주세요.');
+        }
+        if (document.getElementById('syncModal').classList.contains('open')) showConflictAsk();
+      }
+      setSyncBadge(conflict ? '⚠' : '✓');
+    } catch (err) {
+      setSyncBadge('⚠');
+      settings.lastSync = `❌ ${formatWhen(new Date().toISOString())} 자동 동기화 실패: ${err.message}`;
+    } finally {
+      syncBusy = false;
+      if (syncQueued) {
+        syncQueued = false;
+        scheduleAutoPush(1000);
+      }
+    }
+  }
+
+  function onAutoSyncToggle(checked) {
+    settings.autoSync = checked;
+    saveSettingsToStorage();
+    if (checked) autoSync(); else setSyncBadge('');
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - lastAutoPull > 20000) autoSync();
+  });
 
   async function syncToGist(mode) {
     const token = document.getElementById('gistTokenInput').value.trim();
@@ -4031,23 +4273,20 @@ ${dayLines}
       return;
     }
 
+    if (gistId !== settings.gistId) settings.syncedRev = null;   // 다른 Gist로 바꾸면 처음부터 다시 비교
     settings.gistToken = token;
     settings.gistId = gistId;
     document.getElementById('gistIdInput').value = gistId;
     saveSettingsToStorage();
 
-    const FILE_NAME = 'trip-planner-data.json';
-    const headers = {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/vnd.github+json'
-    };
-
+    document.getElementById('syncConfirm').innerHTML = '';
+    setSyncStatus(mode === 'upload' ? 'Gist에 저장하는 중...' : 'Gist에서 가져오는 중...');
     try {
       /* Gist ID를 비워 두면 같은 토큰으로 다른 기기에서 만든 Gist를 찾아 연결 */
       let id = gistId;
       let autoLinked = false;
       if (!id) {
-        id = await findSyncGist(headers, FILE_NAME);
+        id = await findSyncGist();
         if (id) {
           autoLinked = true;
           settings.gistId = id;
@@ -4057,45 +4296,31 @@ ${dayLines}
       }
 
       if (mode === 'upload') {
-        const body = {
-          description: 'Trip Planner Sync Data',
-          public: false,
-          files: { [FILE_NAME]: { content: JSON.stringify(state, null, 2) } }
-        };
-        if (autoLinked && !confirm('이 계정에 이미 저장된 여행 Gist가 있습니다. 그 Gist를 이 기기의 데이터로 덮어쓸까요?\n(다른 기기의 데이터를 받으려면 취소 후 "Gist에서 불러오기"를 누르세요.)')) return;
-        const res = await fetch(id ? `https://api.github.com/gists/${id}` : 'https://api.github.com/gists', {
-          method: id ? 'PATCH' : 'POST',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-        if (!res.ok) throw new Error(res.status === 401 ? '토큰이 올바르지 않습니다 (401)' : res.status === 404 ? 'Gist를 찾을 수 없습니다 (404)' : `HTTP ${res.status}`);
-        const data = await res.json();
-        settings.gistId = data.id;
-        document.getElementById('gistIdInput').value = data.id;
-        saveSettingsToStorage();
+        if (autoLinked) {
+          setSyncStatus('');
+          askInSync('이 계정에 이미 저장된 여행 Gist가 있습니다. 그 Gist를 이 기기의 데이터로 덮어쓸까요? (다른 기기의 데이터를 받으려면 취소 후 "Gist에서 불러오기"를 누르세요.)',
+            '이 기기 데이터로 덮어쓰기', () => syncToGist('upload'));
+          return;
+        }
+        await pushGist(id);
+        document.getElementById('gistIdInput').value = settings.gistId;
+        setSyncBadge(autoSyncReady() ? '✓' : '');
+        setSyncStatus(settings.lastSync + (autoSyncReady() ? '' : ' · 다른 기기에서 "Gist에서 불러오기"를 눌러야 반영됩니다.'));
         showToast(id ? 'Gist에 전체 데이터가 저장되었습니다!' : '새 Gist를 만들어 저장했습니다. 다른 기기에서는 토큰만 넣고 불러오면 됩니다.');
       } else {
         if (!id) throw new Error('이 계정에서 저장된 여행 Gist를 찾지 못했습니다. 다른 기기에서 먼저 "Gist에 저장"을 해 주세요.');
-        const res = await fetch(`https://api.github.com/gists/${id}`, { headers });
-        if (!res.ok) throw new Error(res.status === 401 ? '토큰이 올바르지 않습니다 (401)' : res.status === 404 ? 'Gist를 찾을 수 없습니다 (404)' : `HTTP ${res.status}`);
-        const data = await res.json();
-        const file = data.files && data.files[FILE_NAME];
-        if (!file) throw new Error('저장된 여행 데이터가 없습니다.');
-
-        let content = file.content;
-        if (file.truncated && file.raw_url) {
-          /* 1MB를 넘는 파일은 본문이 잘려서 오므로 원본 주소에서 다시 받음 */
-          const rawRes = await fetch(file.raw_url);
-          if (!rawRes.ok) throw new Error(`HTTP ${rawRes.status}`);
-          content = await rawRes.text();
-        }
-        const loaded = normalizeState(JSON.parse(content || 'null'));
-        if (!loaded) throw new Error('여행 데이터 형식이 올바르지 않습니다.');
-        if (!confirm(`Gist의 여행 ${loaded.trips.length}개로 이 기기의 데이터를 덮어쓸까요?`)) return;
-        closeModal('syncModal');
-        replaceState(loaded, 'Gist에서 데이터를 불러왔습니다!');
+        const remote = await fetchGistState();
+        if (!remote.state) throw new Error('Gist에 여행 데이터가 없거나 형식이 올바르지 않습니다.');
+        setSyncStatus('');
+        askInSync(`Gist에 저장된 내용: ${describeRemote(remote)}. 이 기기의 데이터를 이 내용으로 바꿀까요?`,
+          '이 기기에 불러오기', () => {
+            closeModal('syncModal');
+            applyRemote(remote, 'Gist에서 데이터를 불러왔습니다!');
+            setSyncBadge(autoSyncReady() ? '✓' : '');
+          });
       }
     } catch (err) {
+      setSyncStatus(`❌ 동기화 실패: ${err.message}`);
       showToast(`동기화 실패: ${err.message}`);
     }
   }
