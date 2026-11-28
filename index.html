@@ -752,6 +752,11 @@
         <input type="text" id="bkCode" placeholder="예약번호 / 바우처 코드" />
         <input type="text" id="bkSubInfo" placeholder="체크아웃 또는 이용시간/인원" />
         <input type="text" id="bkLocation" class="full" placeholder="주소 또는 집결지 (지도 검색용)" />
+        <select id="bkRegion" class="full">
+          <option value="auto">🗺️ 지도: 자동 판단</option>
+          <option value="overseas">🌏 지도: 해외 (애플지도 · 구글맵)</option>
+          <option value="domestic">🇰🇷 지도: 국내 (네이버지도 · 카카오맵)</option>
+        </select>
         <input type="url" id="bkUrl" class="full" placeholder="바우처 링크 URL (선택, https://...)" />
         <input type="text" id="bkMemo" class="full" placeholder="메모 (조식 포함 여부, PIN 번호, 취소 규정 등)" />
         <button class="btn-sm primary full" id="bkSubmitBtn" style="padding:10px;" onclick="addBooking()">+ 숙소 · 바우처 저장하기</button>
@@ -1091,9 +1096,9 @@
       <input type="password" id="gistTokenInput" placeholder="ghp_..." />
     </div>
     <div class="field">
-      <label>Gist ID (비워두고 저장 시 새 Gist 자동 생성)</label>
+      <label>Gist ID (비워 두면 자동으로 찾거나 새로 만듭니다)</label>
       <input type="text" id="gistIdInput" placeholder="예: a1b2c3d4e5f6..." />
-      <div class="hint">일정, 이동시간, 숙소·바우처, 티켓, 경비가 모두 동기화됩니다.</div>
+      <div class="hint">다른 기기에서는 같은 토큰만 넣고 불러오면 됩니다. 일정, 이동시간, 숙소·바우처, 티켓, 경비가 모두 동기화됩니다.</div>
     </div>
     <div style="display:flex; gap:8px; margin-top:12px;">
       <button class="btn-sm primary" style="flex:1; padding:9px;" onclick="syncToGist('upload')">⬆️ Gist에 저장</button>
@@ -1151,6 +1156,8 @@
     ['USD', ['미국', '하와이', '괌', '사이판', '뉴욕', '로스앤젤레스', '샌프란시스코', '라스베이거스']]
   ];
 
+  const OVERSEAS_WORDS = CURRENCY_HINTS.flatMap(([, words]) => words);
+
   const KOREA_KEYWORDS = [
     '한국', '국내', '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
     '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주',
@@ -1198,7 +1205,9 @@
   }
 
   function checkIsDomestic(destStr) {
-    const tokens = str(destStr).split(/[\s,·\/()→\-+&~]+/).filter(Boolean);
+    const text = str(destStr);
+    if (OVERSEAS_WORDS.some(w => text.includes(w))) return false;
+    const tokens = text.split(/[\s,·\/()→\-+&~]+/).filter(Boolean);
     return tokens.some(t => KOREA_KEYWORDS.some(k => t.startsWith(k)));
   }
 
@@ -1415,7 +1424,8 @@
         id: uid(x.id, 'bk'),
         type: str(x.type) || '숙소',
         date: str(x.date), title: str(x.title), code: str(x.code), subInfo: str(x.subInfo),
-        location: str(x.location), url: safeUrl(x.url), memo: str(x.memo)
+        location: str(x.location), url: safeUrl(x.url), memo: str(x.memo),
+        region: ['overseas', 'domestic'].includes(x.region) ? x.region : 'auto'
       })),
       tickets: arr(t.tickets).map(x => ({
         id: uid(x.id, 'tk'),
@@ -2163,7 +2173,7 @@
     booking: {
       list: 'bookings', prefix: 'bk', btn: 'bkSubmitBtn', cancel: 'bkCancelBtn',
       addLabel: '+ 숙소 · 바우처 저장하기',
-      ids: { type: 'bkType', date: 'bkDate', title: 'bkTitle', code: 'bkCode', subInfo: 'bkSubInfo', location: 'bkLocation', url: 'bkUrl', memo: 'bkMemo' }
+      ids: { type: 'bkType', date: 'bkDate', title: 'bkTitle', code: 'bkCode', subInfo: 'bkSubInfo', location: 'bkLocation', region: 'bkRegion', url: 'bkUrl', memo: 'bkMemo' }
     },
     ticket: {
       list: 'tickets', prefix: 'tk', btn: 'tkSubmitBtn', cancel: 'tkCancelBtn',
@@ -2191,6 +2201,7 @@
       const el = document.getElementById(id);
       if (el.tagName !== 'SELECT') el.value = '';
     });
+    if (kind === 'booking') document.getElementById('bkRegion').value = 'auto';
     editing[kind] = null;
     document.getElementById(cfg.btn).textContent = cfg.addLabel;
     document.getElementById(cfg.cancel).style.display = 'none';
@@ -2268,10 +2279,8 @@
     el.innerHTML = trip.bookings.map(bk => {
       const isHotel = bk.type === '숙소';
       const icon = isHotel ? '🏨' : (bk.type === '식당예약' ? '🍽️' : '🎟️');
-      /* 지도 종류는 주소 글자가 아니라 여행(도시)의 국내/해외 설정을 따름 */
-      const bkStop = trip.stops.find(st => st.city && `${bk.location} ${bk.title}`.includes(st.city));
-      const bkCity = bkStop ? bkStop.city : (trip.stops.length > 1 ? '' : trip.destination);
-      const placeMaps = buildPlaceMapLinks(bkCity, bk.location || bk.title, bkStop ? bkStop.isDomestic : trip.isDomestic);
+      const place = bookingPlace(trip, bk);
+      const placeMaps = buildPlaceMapLinks(place.city, bk.location || bk.title, place.isDomestic);
       const url = safeUrl(bk.url);
 
       return `
@@ -2297,11 +2306,42 @@
           ${bk.memo ? `<div class="hint" style="margin-top:4px; color:var(--text);">📝 ${escapeHtml(bk.memo)}</div>` : ''}
           <div style="display:flex; gap:6px; margin-top:9px; flex-wrap:wrap;">
             ${placeMaps}
+            <button class="map-btn" onclick="toggleBookingRegion('${bk.id}')" title="이 예약의 지도 종류 바꾸기">⇄ ${place.isDomestic ? '해외지도로' : '국내지도로'}</button>
             ${url ? `<a class="map-btn" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;" href="${escapeHtml(url)}" target="_blank" rel="noopener">🔗 바우처 링크 열기</a>` : ''}
           </div>
         </div>
       `;
     }).join('');
+  }
+
+  /* 예약 한 건의 지도 종류를 여행 설정과 별개로 판단.
+     직접 지정 > 주소의 한국 표기 > 해외 지명 > 외국어로만 된 주소 > 여행(도시) 설정 순 */
+  function bookingPlace(trip, bk) {
+    const text = `${bk.location} ${bk.title}`;
+    const stop = trip.stops.find(st => st.city && text.includes(st.city));
+    const fallback = stop ? stop.isDomestic : trip.isDomestic;
+    let isDomestic;
+    if (bk.region === 'overseas') isDomestic = false;
+    else if (bk.region === 'domestic') isDomestic = true;
+    else if (/korea|대한민국/i.test(text)) isDomestic = true;
+    else if (OVERSEAS_WORDS.some(w => text.includes(w))) isDomestic = false;
+    else if (bk.location && !/[가-힣]/.test(bk.location) && /[A-Za-z\u3040-\u30ff\u4e00-\u9fff]/.test(bk.location)) isDomestic = false;
+    else isDomestic = fallback;
+    /* 도시명은 그 도시 설정과 판단이 일치할 때만 검색어 앞에 붙임 */
+    let city = '';
+    if (stop) city = stop.city;
+    else if (trip.stops.length === 1 && isDomestic === trip.isDomestic) city = trip.destination;
+    return { city, isDomestic };
+  }
+
+  function toggleBookingRegion(id) {
+    const trip = getCurrentTrip();
+    const bk = trip.bookings.find(x => x.id === id);
+    if (!bk) return;
+    bk.region = bookingPlace(trip, bk).isDomestic ? 'overseas' : 'domestic';
+    saveState();
+    render();
+    showToast(bk.region === 'domestic' ? '이 예약은 네이버·카카오맵으로 엽니다.' : '이 예약은 애플·구글맵으로 엽니다.');
   }
 
   function addBooking() {
@@ -3301,7 +3341,7 @@ ${dayLines}
 6. memo에는 수하물, 조식, 인원, 취소 규정 등 현장에서 필요한 핵심만 40자 이내로 적습니다.
 반드시 순수 JSON 배열만 출력하세요 (설명 문장 금지). 항목 형식은 두 가지입니다:
 교통편: {"kind":"ticket","type":"비행기 또는 기차 또는 버스","number":"편명/열차번호","from":"출발지","to":"도착지","depTime":"출발 일시","arrTime":"도착 일시","resCode":"예약번호(PNR)","seat":"좌석 또는 터미널","memo":""}
-숙소·바우처: {"kind":"booking","type":"숙소 또는 입장권/티켓 또는 투어/액티비티 또는 통신/픽업 또는 식당예약","date":"이용일 또는 12/16~12/18 (2박)","title":"숙소명 또는 상품명","code":"예약번호/바우처 코드","subInfo":"체크인 15:00 / 체크아웃 11:00 또는 이용 시간·인원","location":"주소 또는 집결지","url":"바우처 링크(https://...)","memo":""}`;
+숙소·바우처: {"kind":"booking","type":"숙소 또는 입장권/티켓 또는 투어/액티비티 또는 통신/픽업 또는 식당예약","date":"이용일 또는 12/16~12/18 (2박)","title":"숙소명 또는 상품명","code":"예약번호/바우처 코드","subInfo":"체크인 15:00 / 체크아웃 11:00 또는 이용 시간·인원","location":"주소 또는 집결지","country":"숙소·이용 장소가 있는 국가명(한국어, 예: 일본)","url":"바우처 링크(https://...)","memo":""}`;
     const user = `참고: 여행 "${trip.title}" (${tripRouteLabel(trip)}${trip.startDate ? ', ' + trip.startDate + ' 출발' : ''})
 아래 ${text ? '내용' : '첨부 파일'}에서 교통편과 숙소·바우처 예약을 모두 찾아 JSON 배열로 출력하세요.${text ? '\n\n--- 예약 내용 ---\n' + text : ''}`;
     return { system, user };
@@ -3330,7 +3370,8 @@ ${dayLines}
         const rec = {
           type: BOOKING_TYPES.includes(r.type) ? r.type : (/체크인|check-?in|호텔|hotel|숙박/i.test(f(r.type) + f(r.title) + f(r.subInfo)) ? '숙소' : '입장권/티켓'),
           date: f(r.date), title: f(r.title), code: f(r.code), subInfo: f(r.subInfo),
-          location: f(r.location), url: safeUrl(r.url), memo: f(r.memo)
+          location: f(r.location), url: safeUrl(r.url), memo: f(r.memo),
+          region: !f(r.country) ? 'auto' : (/^(한국|대한민국|south korea|korea|republic of korea)$/i.test(f(r.country)) ? 'domestic' : 'overseas')
         };
         const dup = trip.bookings.some(b => b.title === rec.title && b.date === rec.date)
           || (!!rec.code && trip.bookings.some(b => b.code === rec.code));
@@ -3480,7 +3521,7 @@ ${dayLines}
   function duplicateBooking(id) {
     const bk = getCurrentTrip().bookings.find(x => x.id === id);
     if (!bk) return;
-    prefillForm('booking', { type: bk.type, title: bk.title, subInfo: bk.subInfo, location: bk.location, memo: bk.memo },
+    prefillForm('booking', { type: bk.type, title: bk.title, subInfo: bk.subInfo, location: bk.location, region: bk.region, memo: bk.memo },
       '같은 내용을 채웠습니다. 날짜와 예약번호만 바꿔 저장하세요.');
   }
 
@@ -3703,6 +3744,21 @@ ${dayLines}
     showToast(msg, { undo: true });
   }
 
+  /* 토큰 계정의 Gist 목록에서 여행 데이터 파일이 든 Gist를 찾음 (여러 개면 가장 최근에 수정된 것) */
+  async function findSyncGist(headers, fileName) {
+    const found = [];
+    for (let pageNo = 1; pageNo <= 3; pageNo++) {
+      const res = await fetch(`https://api.github.com/gists?per_page=100&page=${pageNo}`, { headers });
+      if (!res.ok) throw new Error(res.status === 401 ? '토큰이 올바르지 않습니다 (401)' : res.status === 403 ? '토큰에 Gist 권한이 없습니다 (403)' : `HTTP ${res.status}`);
+      const list = await res.json();
+      if (!Array.isArray(list)) break;
+      list.forEach(g => { if (g && g.files && g.files[fileName]) found.push(g); });
+      if (list.length < 100) break;
+    }
+    found.sort((a, b) => str(b.updated_at).localeCompare(str(a.updated_at)));
+    return found.length ? str(found[0].id) : '';
+  }
+
   async function syncToGist(mode) {
     const token = document.getElementById('gistTokenInput').value.trim();
     /* Gist 주소를 통째로 붙여넣어도 ID만 추출 */
@@ -3729,14 +3785,28 @@ ${dayLines}
     };
 
     try {
+      /* Gist ID를 비워 두면 같은 토큰으로 다른 기기에서 만든 Gist를 찾아 연결 */
+      let id = gistId;
+      let autoLinked = false;
+      if (!id) {
+        id = await findSyncGist(headers, FILE_NAME);
+        if (id) {
+          autoLinked = true;
+          settings.gistId = id;
+          document.getElementById('gistIdInput').value = id;
+          saveSettingsToStorage();
+        }
+      }
+
       if (mode === 'upload') {
         const body = {
           description: 'Trip Planner Sync Data',
           public: false,
           files: { [FILE_NAME]: { content: JSON.stringify(state, null, 2) } }
         };
-        const res = await fetch(gistId ? `https://api.github.com/gists/${gistId}` : 'https://api.github.com/gists', {
-          method: gistId ? 'PATCH' : 'POST',
+        if (autoLinked && !confirm('이 계정에 이미 저장된 여행 Gist가 있습니다. 그 Gist를 이 기기의 데이터로 덮어쓸까요?\n(다른 기기의 데이터를 받으려면 취소 후 "Gist에서 불러오기"를 누르세요.)')) return;
+        const res = await fetch(id ? `https://api.github.com/gists/${id}` : 'https://api.github.com/gists', {
+          method: id ? 'PATCH' : 'POST',
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
@@ -3745,13 +3815,10 @@ ${dayLines}
         settings.gistId = data.id;
         document.getElementById('gistIdInput').value = data.id;
         saveSettingsToStorage();
-        showToast('Gist에 전체 데이터가 저장되었습니다!');
+        showToast(id ? 'Gist에 전체 데이터가 저장되었습니다!' : '새 Gist를 만들어 저장했습니다. 다른 기기에서는 토큰만 넣고 불러오면 됩니다.');
       } else {
-        if (!gistId) {
-          showToast('불러올 Gist ID를 입력해 주세요.');
-          return;
-        }
-        const res = await fetch(`https://api.github.com/gists/${gistId}`, { headers });
+        if (!id) throw new Error('이 계정에서 저장된 여행 Gist를 찾지 못했습니다. 다른 기기에서 먼저 "Gist에 저장"을 해 주세요.');
+        const res = await fetch(`https://api.github.com/gists/${id}`, { headers });
         if (!res.ok) throw new Error(res.status === 401 ? '토큰이 올바르지 않습니다 (401)' : res.status === 404 ? 'Gist를 찾을 수 없습니다 (404)' : `HTTP ${res.status}`);
         const data = await res.json();
         const file = data.files && data.files[FILE_NAME];
